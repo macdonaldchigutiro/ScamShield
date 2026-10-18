@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/providers/app_providers.dart';
-import '../features/scam_check/presentation/screens/scam_investigator_screen.dart';
+import '../features/scam_check/presentation/screens/scam_investigator_screen_v2.dart';
 import '../learn_screen.dart';
 import '../protect_screen.dart';
 import '../radar_screen.dart';
