@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../check_screen.dart';
 import '../core/providers/app_providers.dart';
+import '../features/scam_check/presentation/screens/scam_investigator_screen.dart';
 import '../learn_screen.dart';
 import '../protect_screen.dart';
 import '../radar_screen.dart';
@@ -39,7 +39,7 @@ class AppShell extends ConsumerWidget {
                     index: selectedTab,
                     children: [
                       RadarScreen(sim: sim),
-                      const CheckScreen(),
+                      const ScamInvestigatorScreen(),
                       const ProtectScreen(),
                       const SosScreen(),
                       const LearnScreen(),
@@ -66,7 +66,8 @@ class AppShell extends ConsumerWidget {
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.shield_outlined),
+            icon: Icon(Icons.manage_search_outlined),
+            selectedIcon: Icon(Icons.manage_search_rounded),
             label: 'Check',
           ),
           NavigationDestination(
