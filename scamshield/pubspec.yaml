@@ -1,5 +1,5 @@
 name: scamshield
-description: ScamShield - mobile money scam defence (prototype).
+description: ScamShield - digital fraud defence.
 publish_to: "none"
 version: 1.0.0+1
 
@@ -9,6 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # Riverpod keeps application state outside widgets and makes dependencies
+  # explicit, testable and easy to replace as ScamShield grows.
+  flutter_riverpod: ^2.6.1
+
+  # go_router gives the app declarative navigation, deep-link support and a
+  # clean path to web/mobile routes without scattering Navigator calls around.
+  go_router: ^14.8.1
 
 dev_dependencies:
   flutter_test:
