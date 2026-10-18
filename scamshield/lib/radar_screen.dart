@@ -2,27 +2,96 @@ import 'package:flutter/material.dart';
 
 import 'analysis_view.dart';
 import 'analyzer.dart';
+import 'check_screen.dart';
+import 'protect_screen.dart';
 import 'radar_view.dart';
 import 'sim.dart';
+import 'sos_screen.dart';
 import 'theme.dart';
 
 class RadarScreen extends StatelessWidget {
   final ThreatSim sim;
   const RadarScreen({super.key, required this.sim});
 
-  Widget _stat(String label, String value, Color color) {
+  void _open(BuildContext context, Widget page) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => page),
+    );
+  }
+
+  Widget _quickAction(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: color.withOpacity(0.08),
+          border: Border.all(color: color.withOpacity(0.28)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: color.withOpacity(0.14),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          color: Palette.text,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          color: Palette.dim, fontSize: 11, height: 1.3)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_rounded,
+                color: color.withOpacity(0.9), size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _metric(String value, String label, Color color) {
     return Expanded(
-      child: GlassCard(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white.withOpacity(0.025),
+          border: Border.all(color: Palette.glassBorder),
+        ),
         child: Column(
           children: [
             Text(value,
                 style: TextStyle(
-                    color: color, fontSize: 22, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 2),
+                    color: color, fontSize: 22, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 3),
             Text(label,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
-                    color: Palette.dim, fontSize: 9, letterSpacing: 1.5)),
+                    color: Palette.dim, fontSize: 9, letterSpacing: 1.2)),
           ],
         ),
       ),
@@ -35,287 +104,414 @@ class RadarScreen extends StatelessWidget {
     final levelColor = level == 'HIGH'
         ? Palette.red
         : (level == 'ELEVATED' ? Palette.amber : Palette.green);
-    final types = sim.topTypes;
-    final maxCount = types.isEmpty ? 1 : types.first.value;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       children: [
         GlassCard(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(20),
+          borderColor: Palette.cyan.withOpacity(0.26),
+          tint: const Color(0x1600E5FF),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final wide = box.maxWidth > 850;
+              final intro = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Palette.green.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: Palette.green.withOpacity(0.32)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.shield_rounded, color: Palette.green, size: 14),
+                        SizedBox(width: 6),
+                        Text('SCAMSHIELD ACTIVE',
+                            style: TextStyle(
+                                color: Palette.green,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.4)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Something feels wrong?',
+                    style: TextStyle(
+                      color: Palette.text,
+                      fontSize: 28,
+                      height: 1.05,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Check it before you click, reply, pay or share a code.',
+                    style: TextStyle(
+                        color: Palette.dim, fontSize: 14, height: 1.45),
+                  ),
+                  const SizedBox(height: 18),
+                  GlowButton(
+                    label: 'CHECK SOMETHING SUSPICIOUS',
+                    icon: Icons.manage_search_rounded,
+                    onTap: () => _open(context, const CheckScreen()),
+                  ),
+                  const SizedBox(height: 10),
+                  const Row(
+                    children: [
+                      Icon(Icons.lock_outline, color: Palette.dim, size: 15),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Private by design • analysis stays on this device in the prototype',
+                          style: TextStyle(color: Palette.dim, fontSize: 10),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+
+              final score = Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Palette.violet.withOpacity(0.16),
+                      Palette.cyan.withOpacity(0.05),
+                    ],
+                  ),
+                  border: Border.all(color: Palette.violet.withOpacity(0.26)),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 94,
+                      height: 94,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CustomPaint(
+                            size: const Size.square(94),
+                            painter: RingPainter(0.82, Palette.green, thickness: 8),
+                          ),
+                          const Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('82',
+                                  style: TextStyle(
+                                      color: Palette.text,
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.w900)),
+                              Text('PROTECTED',
+                                  style: TextStyle(
+                                      color: Palette.dim,
+                                      fontSize: 8,
+                                      letterSpacing: 1.0)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Your protection score',
+                              style: TextStyle(
+                                  color: Palette.text,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14)),
+                          SizedBox(height: 6),
+                          Text(
+                            'Strong start. Two account-safety actions can make you harder to scam.',
+                            style: TextStyle(
+                                color: Palette.dim, fontSize: 11, height: 1.35),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(Icons.circle, size: 7, color: Palette.amber),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text('2 actions recommended',
+                                    style: TextStyle(
+                                        color: Palette.amber,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              if (wide) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(flex: 6, child: intro),
+                    const SizedBox(width: 24),
+                    Expanded(flex: 4, child: score),
+                  ],
+                );
+              }
+              return Column(
+                children: [intro, const SizedBox(height: 18), score],
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 14),
+        const Text('QUICK ACTIONS',
+            style: TextStyle(color: Palette.cyan, letterSpacing: 2, fontSize: 11)),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, box) {
+            final wide = box.maxWidth > 760;
+            final actions = [
+              _quickAction(
+                context,
+                icon: Icons.chat_bubble_outline_rounded,
+                title: 'Check a message',
+                subtitle: 'SMS, WhatsApp, email or social message',
+                color: Palette.cyan,
+                onTap: () => _open(context, const CheckScreen()),
+              ),
+              _quickAction(
+                context,
+                icon: Icons.link_rounded,
+                title: 'Check a suspicious link',
+                subtitle: 'Inspect wording, domains and common scam tricks',
+                color: Palette.violet,
+                onTap: () => _open(context, const CheckScreen()),
+              ),
+              _quickAction(
+                context,
+                icon: Icons.health_and_safety_outlined,
+                title: 'Improve my protection',
+                subtitle: 'Harden WhatsApp, SIM, email and money accounts',
+                color: Palette.green,
+                onTap: () => _open(context, const ProtectScreen()),
+              ),
+              _quickAction(
+                context,
+                icon: Icons.emergency_outlined,
+                title: 'I think I have been scammed',
+                subtitle: 'Get immediate recovery steps and damage control',
+                color: Palette.red,
+                onTap: () => _open(context, const SosScreen()),
+              ),
+            ];
+
+            if (!wide) {
+              return Column(
+                children: [
+                  for (int i = 0; i < actions.length; i++) ...[
+                    actions[i],
+                    if (i != actions.length - 1) const SizedBox(height: 8),
+                  ],
+                ],
+              );
+            }
+            return Column(
+              children: [
+                Row(children: [Expanded(child: actions[0]), const SizedBox(width: 8), Expanded(child: actions[1])]),
+                const SizedBox(height: 8),
+                Row(children: [Expanded(child: actions[2]), const SizedBox(width: 8), Expanded(child: actions[3])]),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 14),
+        GlassCard(
+          padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Text('LIVE THREAT RADAR',
-                      style: TextStyle(
-                          color: Palette.cyan, letterSpacing: 2, fontSize: 11)),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('THREAT PULSE',
+                          style: TextStyle(
+                              color: Palette.cyan,
+                              letterSpacing: 2,
+                              fontSize: 11)),
+                      SizedBox(height: 3),
+                      Text('Prototype intelligence feed',
+                          style: TextStyle(color: Palette.dim, fontSize: 10)),
+                    ],
+                  ),
                   const Spacer(),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: levelColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: levelColor),
+                      color: levelColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: levelColor.withOpacity(0.7)),
                     ),
                     child: Text('THREAT $level',
                         style: TextStyle(
                             color: levelColor,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5)),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2)),
                   ),
                 ],
               ),
-              ThreatRadar(sim: sim),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _Dot(Palette.green, 'Safe'),
-                  SizedBox(width: 16),
-                  _Dot(Palette.amber, 'Suspicious'),
-                  SizedBox(width: 16),
-                  _Dot(Palette.red, 'Scam'),
-                ],
-              ),
-              const SizedBox(height: 4),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            _stat('SCANNED', '${sim.scanned}', Palette.cyan),
-            const SizedBox(width: 8),
-            _stat('SCAMS BLOCKED', '${sim.blocked}', Palette.red),
-            const SizedBox(width: 8),
-            _stat('SUSPICIOUS', '${sim.suspicious}', Palette.amber),
-          ],
-        ),
-        const SizedBox(height: 10),
-        GlassCard(
-          borderColor: Palette.red.withOpacity(0.5),
-          child: Row(
-            children: [
-              const Icon(Icons.phonelink_lock, color: Palette.red, size: 30),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${sim.takeoverBlocked}',
-                        style: const TextStyle(
-                            color: Palette.red,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800)),
-                    const Text(
-                      'account takeover attempts caught: code theft, SIM swap, fake login pages',
-                      style: TextStyle(color: Palette.dim, fontSize: 12, height: 1.3),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        GlassCard(
-          child: Row(
-            children: [
-              const Icon(Icons.savings_outlined, color: Palette.green, size: 30),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('\$${sim.amountBlocked.round()}',
-                        style: const TextStyle(
-                            color: Palette.green,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800)),
-                    const Text(
-                      'asked for in the scams blocked so far (simulated)',
-                      style: TextStyle(color: Palette.dim, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Text('WHERE SCAMS COME FROM',
-            style: TextStyle(color: Palette.cyan, letterSpacing: 2, fontSize: 11)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            for (final c in [Channel.whatsapp, Channel.sms, Channel.facebook, Channel.email, Channel.call])
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: GlassCard(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Column(
-                      children: [
-                        Icon(channelIcon(c), color: Palette.violet, size: 20),
-                        const SizedBox(height: 4),
-                        Text('${sim.byChannel[c] ?? 0}',
-                            style: const TextStyle(
-                                color: Palette.text,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16)),
-                        Text(channelLabel(c) == 'Phone call' ? 'Calls' : channelLabel(c),
-                            style: const TextStyle(
-                                color: Palette.dim, fontSize: 9)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        const Text('SCAMS BY TYPE',
-            style: TextStyle(color: Palette.cyan, letterSpacing: 2, fontSize: 11)),
-        const SizedBox(height: 8),
-        GlassCard(
-          child: types.isEmpty
-              ? const Text('No scams blocked yet.',
-                  style: TextStyle(color: Palette.dim))
-              : Column(
-                  children: [
-                    for (final e in types)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, box) {
+                  final wide = box.maxWidth > 820;
+                  final radar = SizedBox(
+                    height: 270,
+                    child: ThreatRadar(sim: sim),
+                  );
+                  final summary = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('What ScamShield is seeing',
+                          style: TextStyle(
+                              color: Palette.text,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Account takeover, code theft and payment redirection are the strongest signals in this simulated feed.',
+                        style: TextStyle(color: Palette.dim, fontSize: 12, height: 1.4),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          _metric('${sim.scanned}', 'SCANNED', Palette.cyan),
+                          const SizedBox(width: 8),
+                          _metric('${sim.blocked}', 'BLOCKED', Palette.red),
+                          const SizedBox(width: 8),
+                          _metric('${sim.suspicious}', 'SUSPICIOUS', Palette.amber),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          color: Palette.red.withOpacity(0.06),
+                          border: Border.all(color: Palette.red.withOpacity(0.22)),
+                        ),
                         child: Row(
                           children: [
-                            SizedBox(
-                              width: 118,
-                              child: Text(e.key,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      color: Palette.text, fontSize: 12)),
-                            ),
+                            const Icon(Icons.phonelink_lock_rounded,
+                                color: Palette.red),
+                            const SizedBox(width: 10),
                             Expanded(
-                              child: LayoutBuilder(builder: (context, box) {
-                                final w = box.maxWidth * e.value / maxCount;
-                                return Stack(
-                                  children: [
-                                    Container(
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: Palette.glassBorder,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                    ),
-                                    AnimatedContainer(
-                                      duration: const Duration(milliseconds: 500),
-                                      width: w,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        gradient: dangerGradient,
-                                        borderRadius: BorderRadius.circular(4),
-                                        boxShadow: [
-                                          BoxShadow(
-                                              color: Palette.red.withOpacity(0.5),
-                                              blurRadius: 8)
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }),
-                            ),
-                            SizedBox(
-                              width: 30,
-                              child: Text('${e.value}',
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(
-                                      color: Palette.red,
-                                      fontWeight: FontWeight.w700)),
+                              child: Text(
+                                '${sim.takeoverBlocked} account takeover attempts identified in the simulation',
+                                style: const TextStyle(
+                                    color: Palette.text,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700),
+                              ),
                             ),
                           ],
                         ),
                       ),
-                  ],
-                ),
+                    ],
+                  );
+                  if (wide) {
+                    return Row(
+                      children: [
+                        Expanded(flex: 5, child: radar),
+                        const SizedBox(width: 18),
+                        Expanded(flex: 5, child: summary),
+                      ],
+                    );
+                  }
+                  return Column(children: [radar, const SizedBox(height: 8), summary]);
+                },
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
-        const Text('LIVE MESSAGES  (TAP ONE TO SEE WHY)',
+        const SizedBox(height: 14),
+        const Text('RECENT SIGNALS',
             style: TextStyle(color: Palette.cyan, letterSpacing: 2, fontSize: 11)),
         const SizedBox(height: 8),
-        for (final m in sim.feed.take(8))
+        for (final m in sim.feed.take(4))
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
               onTap: () => showAnalysisSheet(context, m.text, m.a, sender: m.sender),
               child: GlassCard(
                 padding: const EdgeInsets.all(12),
-                borderColor: verdictColor(m.a.verdict).withOpacity(0.35),
+                borderColor: verdictColor(m.a.verdict).withOpacity(0.28),
                 child: Row(
                   children: [
                     Container(
-                      width: 38,
-                      height: 38,
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: verdictColor(m.a.verdict).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(13),
+                        color: verdictColor(m.a.verdict).withOpacity(0.12),
                       ),
                       child: Icon(verdictIcon(m.a.verdict),
-                          color: verdictColor(m.a.verdict), size: 20),
+                          color: verdictColor(m.a.verdict), size: 21),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${m.sender}  •  ${channelLabel(m.a.channel)}',
+                          Text('${m.sender} • ${channelLabel(m.a.channel)}',
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   color: Palette.text,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13)),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12)),
+                          const SizedBox(height: 2),
                           Text(m.text,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  color: Palette.dim, fontSize: 12, height: 1.3)),
+                                  color: Palette.dim, fontSize: 11, height: 1.3)),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text('${m.a.score}',
-                        style: TextStyle(
-                            color: verdictColor(m.a.verdict),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('${m.a.score}',
+                            style: TextStyle(
+                                color: verdictColor(m.a.verdict),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18)),
+                        const Text('RISK',
+                            style: TextStyle(
+                                color: Palette.dim,
+                                fontSize: 8,
+                                letterSpacing: 1.0)),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ),
           ),
-      ],
-    );
-  }
-}
-
-class _Dot extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _Dot(this.color, this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-        const SizedBox(width: 5),
-        Text(label, style: const TextStyle(color: Palette.dim, fontSize: 11)),
       ],
     );
   }
