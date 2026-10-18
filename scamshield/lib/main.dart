@@ -195,7 +195,7 @@ class _ShellState extends State<Shell> {
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.radar), label: 'Radar'),
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.shield_outlined), label: 'Check'),
           NavigationDestination(icon: Icon(Icons.verified_user_outlined), label: 'Protect'),
           NavigationDestination(icon: Icon(Icons.support_agent), label: 'Help'),
