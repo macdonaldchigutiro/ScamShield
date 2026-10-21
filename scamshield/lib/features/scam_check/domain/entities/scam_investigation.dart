@@ -45,9 +45,9 @@ class InvestigationLink {
 
 /// Normalised phone-number intelligence found during an investigation.
 ///
-/// `warnings` describes only facts ScamShield can infer locally. We do not
-/// claim that a number has been reported unless a real reputation source has
-/// supplied that data.
+/// `warnings` describes facts ScamShield can infer locally. Reputation fields
+/// are populated only when a real or explicitly-labelled prototype source has
+/// supplied them; a missing reputation is never treated as evidence of fraud.
 class InvestigationPhoneNumber {
   final String raw;
   final String normalized;
@@ -56,6 +56,9 @@ class InvestigationPhoneNumber {
   final List<String> warnings;
   final double risk;
   final bool reputationAvailable;
+  final int reportCount;
+  final String? reportedCategory;
+  final String? reputationSource;
 
   const InvestigationPhoneNumber({
     required this.raw,
@@ -65,7 +68,32 @@ class InvestigationPhoneNumber {
     required this.warnings,
     required this.risk,
     this.reputationAvailable = false,
+    this.reportCount = 0,
+    this.reportedCategory,
+    this.reputationSource,
   });
+
+  InvestigationPhoneNumber copyWith({
+    List<String>? warnings,
+    double? risk,
+    bool? reputationAvailable,
+    int? reportCount,
+    String? reportedCategory,
+    String? reputationSource,
+  }) {
+    return InvestigationPhoneNumber(
+      raw: raw,
+      normalized: normalized,
+      countryHint: countryHint,
+      typeHint: typeHint,
+      warnings: warnings ?? this.warnings,
+      risk: risk ?? this.risk,
+      reputationAvailable: reputationAvailable ?? this.reputationAvailable,
+      reportCount: reportCount ?? this.reportCount,
+      reportedCategory: reportedCategory ?? this.reportedCategory,
+      reputationSource: reputationSource ?? this.reputationSource,
+    );
+  }
 }
 
 class InvestigationHighlight {
