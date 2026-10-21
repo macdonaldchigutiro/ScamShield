@@ -78,6 +78,53 @@ class IncidentController extends StateNotifier<IncidentState> {
     return incident;
   }
 
+  /// Saves a recovery case created from the Emergency flow.
+  ///
+  /// Recovery cases are not assigned a fabricated detector risk score. They are
+  /// stored as action-required incidents because the user has explicitly said
+  /// something harmful or suspicious happened and is following a recovery plan.
+  Future<IncidentRecord> saveRecoveryIncident({
+    required String category,
+    required String summary,
+    required List<String> recommendedActions,
+    String sender = '',
+    String notes = '',
+    double? amount,
+    String? transactionReference,
+  }) async {
+    final now = DateTime.now();
+    final incident = IncidentRecord(
+      id: _buildIncidentId(now),
+      createdAt: now,
+      updatedAt: now,
+      sourceLabel: 'Emergency recovery',
+      content: summary.trim(),
+      sender: sender.trim(),
+      riskScore: 0,
+      verdict: InvestigationVerdict.suspicious,
+      category: category,
+      reasons: const [
+        InvestigationReason(
+          title: 'User-started recovery case',
+          explanation:
+              'This case was created from ScamShield Emergency help, not from an automated scam score.',
+          severity: 0,
+        ),
+      ],
+      recommendedActions: recommendedActions,
+      status: IncidentStatus.actionRequired,
+      notes: notes.trim(),
+      amount: amount,
+      transactionReference: transactionReference?.trim().isEmpty == true
+          ? null
+          : transactionReference?.trim(),
+    );
+
+    final updated = [incident, ...state.incidents];
+    await _persist(updated);
+    return incident;
+  }
+
   Future<void> updateIncident({
     required String id,
     IncidentStatus? status,
