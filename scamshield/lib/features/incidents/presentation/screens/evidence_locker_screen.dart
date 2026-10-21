@@ -613,11 +613,15 @@ void _showIncidentSheet(
                           ),
                         ),
                         const Spacer(),
-                        IconButton(
-                          tooltip: 'Close incident',
-                          semanticLabel: 'Close incident',
-                          onPressed: () => Navigator.of(sheetContext).pop(),
-                          icon: const Icon(Icons.close_rounded),
+                        Semantics(
+                          button: true,
+                          label: 'Close incident',
+                          child: IconButton(
+                            tooltip: 'Close incident',
+                            onPressed: () =>
+                                Navigator.of(sheetContext).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
                         ),
                       ],
                     ),
