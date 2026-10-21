@@ -3,21 +3,33 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../theme.dart';
+import '../../data/services/incident_backup_export_service.dart';
 import '../../data/services/incident_pdf_export_service.dart';
 import '../../domain/entities/incident_record.dart';
 import '../../domain/services/incident_report_formatter.dart';
 import '../controllers/incident_controller.dart';
 
+enum _LockerFilter { all, actionRequired, reported, resolved }
+
 /// Main Evidence Locker view.
 ///
-/// Suspicious and high-risk investigations are preserved here so users can
-/// review evidence, add recovery details and export a portable incident report.
-class EvidenceLockerScreen extends ConsumerWidget {
+/// The locker is intentionally local-first. It gives users clear lifecycle
+/// controls, portable exports and an explicit way to remove sensitive evidence.
+class EvidenceLockerScreen extends ConsumerStatefulWidget {
   const EvidenceLockerScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EvidenceLockerScreen> createState() =>
+      _EvidenceLockerScreenState();
+}
+
+class _EvidenceLockerScreenState extends ConsumerState<EvidenceLockerScreen> {
+  _LockerFilter _filter = _LockerFilter.all;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(incidentControllerProvider);
+    final filtered = _applyFilter(state.incidents);
 
     return Scaffold(
       backgroundColor: Palette.bg,
@@ -28,6 +40,14 @@ class EvidenceLockerScreen extends ConsumerWidget {
           'Evidence Locker',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          if (state.incidents.isNotEmpty)
+            IconButton(
+              tooltip: 'Export all evidence',
+              onPressed: () => _exportAll(context, state.incidents),
+              icon: const Icon(Icons.archive_outlined),
+            ),
+        ],
       ),
       body: CyberBackground(
         child: SafeArea(
@@ -41,10 +61,14 @@ class EvidenceLockerScreen extends ConsumerWidget {
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
                       children: [
-                        _LockerSummary(incidents: state.incidents),
+                        _LockerSummary(
+                          incidents: state.incidents,
+                          onExportAll: () =>
+                              _exportAll(context, state.incidents),
+                        ),
                         const SizedBox(height: 16),
                         const Text(
-                          'SAVED INCIDENTS',
+                          'FIND AN INCIDENT',
                           style: TextStyle(
                             color: Palette.cyan,
                             fontSize: 10,
@@ -53,13 +77,170 @@ class EvidenceLockerScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        for (final incident in state.incidents)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _IncidentCard(incident: incident),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _FilterChip(
+                                label: 'All',
+                                selected: _filter == _LockerFilter.all,
+                                onSelected: () => setState(
+                                  () => _filter = _LockerFilter.all,
+                                ),
+                              ),
+                              _FilterChip(
+                                label: 'Action required',
+                                selected:
+                                    _filter == _LockerFilter.actionRequired,
+                                onSelected: () => setState(
+                                  () => _filter = _LockerFilter.actionRequired,
+                                ),
+                              ),
+                              _FilterChip(
+                                label: 'Reported',
+                                selected: _filter == _LockerFilter.reported,
+                                onSelected: () => setState(
+                                  () => _filter = _LockerFilter.reported,
+                                ),
+                              ),
+                              _FilterChip(
+                                label: 'Resolved',
+                                selected: _filter == _LockerFilter.resolved,
+                                onSelected: () => setState(
+                                  () => _filter = _LockerFilter.resolved,
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'SAVED INCIDENTS',
+                                style: TextStyle(
+                                  color: Palette.cyan,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${filtered.length} shown',
+                              style: const TextStyle(
+                                color: Palette.dim,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (filtered.isEmpty)
+                          const GlassCard(
+                            child: Text(
+                              'No incidents match this filter.',
+                              style: TextStyle(color: Palette.dim),
+                            ),
+                          )
+                        else
+                          for (final incident in filtered)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _IncidentCard(incident: incident),
+                            ),
                       ],
                     ),
+        ),
+      ),
+    );
+  }
+
+  List<IncidentRecord> _applyFilter(List<IncidentRecord> incidents) {
+    switch (_filter) {
+      case _LockerFilter.all:
+        return incidents;
+      case _LockerFilter.actionRequired:
+        return incidents
+            .where((item) => item.status == IncidentStatus.actionRequired)
+            .toList();
+      case _LockerFilter.reported:
+        return incidents
+            .where((item) => item.status == IncidentStatus.reported)
+            .toList();
+      case _LockerFilter.resolved:
+        return incidents
+            .where((item) => item.status == IncidentStatus.resolved)
+            .toList();
+    }
+  }
+
+  Future<void> _exportAll(
+    BuildContext context,
+    List<IncidentRecord> incidents,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Export all evidence?'),
+        content: const Text(
+          'This creates a JSON backup containing the complete Evidence Locker, including private messages, numbers and notes. Store it somewhere secure.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: const Icon(Icons.download_rounded),
+            label: const Text('Export all'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    try {
+      final fileName = await const IncidentBackupExportService()
+          .exportAll(incidents);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$fileName downloaded.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not export backup: $error')),
+      );
+    }
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        selected: selected,
+        onSelected: (_) => onSelected(),
+        label: Text(label),
+        showCheckmark: selected,
+        selectedColor: Palette.cyan.withOpacity(.18),
+        side: BorderSide(
+          color: selected ? Palette.cyan : Palette.line,
         ),
       ),
     );
@@ -68,8 +249,12 @@ class EvidenceLockerScreen extends ConsumerWidget {
 
 class _LockerSummary extends StatelessWidget {
   final List<IncidentRecord> incidents;
+  final VoidCallback onExportAll;
 
-  const _LockerSummary({required this.incidents});
+  const _LockerSummary({
+    required this.incidents,
+    required this.onExportAll,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -82,22 +267,28 @@ class _LockerSummary extends StatelessWidget {
 
     return GlassCard(
       borderColor: Palette.violet.withOpacity(0.45),
-      tint: const Color(0x127C5CFF),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.inventory_2_outlined, color: Palette.violet),
-              SizedBox(width: 9),
-              Text(
-                'YOUR EVIDENCE LOCKER',
-                style: TextStyle(
-                  color: Palette.violet,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.7,
+              const Icon(Icons.inventory_2_outlined, color: Palette.violet),
+              const SizedBox(width: 9),
+              const Expanded(
+                child: Text(
+                  'YOUR EVIDENCE LOCKER',
+                  style: TextStyle(
+                    color: Palette.violet,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.7,
+                  ),
                 ),
+              ),
+              TextButton.icon(
+                onPressed: onExportAll,
+                icon: const Icon(Icons.archive_outlined, size: 18),
+                label: const Text('Export all'),
               ),
             ],
           ),
@@ -194,29 +385,31 @@ class _IncidentCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final color = _verdictColor(incident);
+    final preview = _preview(incident.content);
 
     return InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: () => _showIncidentSheet(context, ref, incident),
       child: GlassCard(
-        borderColor: color.withOpacity(0.38),
+        borderColor: color.withOpacity(0.34),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 54,
+              height: 54,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.11),
-                shape: BoxShape.circle,
-                border: Border.all(color: color.withOpacity(0.45), width: 2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withOpacity(0.4)),
               ),
               child: Text(
-                '${incident.riskScore}',
+                incident.riskScore == 0 ? 'CASE' : '${incident.riskScore}',
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.w900,
-                  fontSize: 18,
+                  fontSize: incident.riskScore == 0 ? 10 : 18,
                 ),
               ),
             ),
@@ -225,26 +418,55 @@ class _IncidentCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    incident.category,
-                    style: const TextStyle(
-                      color: Palette.text,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          incident.category,
+                          style: const TextStyle(
+                            color: Palette.text,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _friendlyDate(incident.createdAt),
+                        style: const TextStyle(
+                          color: Palette.dim,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${incident.id}  •  ${incident.sourceLabel}',
+                    incident.sourceLabel,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Palette.dim, fontSize: 10.5),
+                    style: const TextStyle(color: Palette.dim, fontSize: 11),
                   ),
-                  const SizedBox(height: 5),
+                  if (preview.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      preview,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Palette.text,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
                   _StatusPill(status: incident.status),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Palette.dim),
+            const Padding(
+              padding: EdgeInsets.only(top: 16),
+              child: Icon(Icons.chevron_right_rounded, color: Palette.dim),
+            ),
           ],
         ),
       ),
@@ -259,27 +481,21 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (status) {
-      IncidentStatus.reviewing => ('REVIEWING', Palette.cyan),
-      IncidentStatus.actionRequired => ('ACTION REQUIRED', Palette.amber),
-      IncidentStatus.reported => ('REPORTED', Palette.violet),
-      IncidentStatus.resolved => ('RESOLVED', Palette.green),
-    };
-
+    final (label, color) = _statusStyle(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.09),
+        color: color.withOpacity(0.11),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withOpacity(0.4)),
       ),
       child: Text(
         label,
         style: TextStyle(
           color: color,
-          fontSize: 8.5,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.9,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: .7,
         ),
       ),
     );
@@ -312,7 +528,7 @@ class _EmptyLocker extends StatelessWidget {
               ),
               SizedBox(height: 7),
               Text(
-                'Suspicious and high-risk investigations will appear here automatically so important evidence is not lost.',
+                'Suspicious and high-risk investigations, plus recovery cases you save, will appear here.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Palette.dim, height: 1.4),
               ),
@@ -336,10 +552,10 @@ void _showIncidentSheet(
   final referenceController = TextEditingController(
     text: incident.transactionReference ?? '',
   );
+  var selectedStatus = incident.status;
+  var hidePhoneNumbers = false;
 
   IncidentRecord currentDraft() {
-    // Build a fresh record instead of relying on copyWith so clearing optional
-    // amount/reference fields is represented accurately in exported reports.
     return IncidentRecord(
       id: incident.id,
       createdAt: incident.createdAt,
@@ -352,7 +568,7 @@ void _showIncidentSheet(
       category: incident.category,
       reasons: incident.reasons,
       recommendedActions: incident.recommendedActions,
-      status: incident.status,
+      status: selectedStatus,
       notes: notesController.text.trim(),
       amount: double.tryParse(amountController.text.trim()),
       transactionReference: referenceController.text.trim().isEmpty
@@ -366,312 +582,408 @@ void _showIncidentSheet(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (sheetContext) {
-      return DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.6,
-        maxChildSize: 0.97,
-        expand: false,
-        builder: (_, scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF0A1226),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border(top: BorderSide(color: Palette.glassBorder)),
-            ),
-            child: ListView(
-              controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 28),
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Palette.glassBorder,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+      return StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.92,
+            minChildSize: 0.6,
+            maxChildSize: 0.97,
+            expand: false,
+            builder: (_, scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: Palette.bg,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(28),
                   ),
+                  border: Border(top: BorderSide(color: Palette.line)),
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  incident.id,
-                  style: const TextStyle(
-                    color: Palette.cyan,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.8,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  incident.category,
-                  style: const TextStyle(
-                    color: Palette.text,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _StatusPill(status: incident.status),
-                const SizedBox(height: 16),
-                GlassCard(
-                  borderColor: _verdictColor(incident).withOpacity(0.45),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${incident.riskScore}',
-                        style: TextStyle(
-                          color: _verdictColor(incident),
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'RISK SCORE\nSaved from ScamShield investigation',
-                          style: TextStyle(
-                            color: Palette.dim,
-                            fontSize: 11,
-                            height: 1.4,
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 30),
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Palette.line,
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: 'Close incident',
+                          semanticLabel: 'Close incident',
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      incident.id,
+                      style: const TextStyle(
+                        color: Palette.cyan,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.4,
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const _SheetLabel('EVIDENCE / CONTENT'),
-                const SizedBox(height: 7),
-                GlassCard(
-                  child: SelectableText(
-                    incident.content.isEmpty ? 'No text recorded.' : incident.content,
-                    style: const TextStyle(color: Palette.text, height: 1.45),
-                  ),
-                ),
-                if (incident.reasons.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  const _SheetLabel('WHY IT WAS FLAGGED'),
-                  const SizedBox(height: 7),
-                  for (final reason in incident.reasons.take(6))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 7),
-                      child: GlassCard(
-                        padding: const EdgeInsets.all(11),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              reason.title,
-                              style: const TextStyle(
-                                color: Palette.text,
-                                fontWeight: FontWeight.w800,
-                              ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      incident.category,
+                      style: const TextStyle(
+                        color: Palette.text,
+                        fontSize: 23,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Saved ${_friendlyDate(incident.createdAt)}',
+                      style: const TextStyle(color: Palette.dim, fontSize: 12),
+                    ),
+                    const SizedBox(height: 14),
+                    GlassCard(
+                      borderColor: _verdictColor(incident).withOpacity(.4),
+                      child: Row(
+                        children: [
+                          Text(
+                            incident.riskScore == 0
+                                ? 'CASE'
+                                : '${incident.riskScore}',
+                            style: TextStyle(
+                              color: _verdictColor(incident),
+                              fontSize: incident.riskScore == 0 ? 20 : 34,
+                              fontWeight: FontWeight.w900,
                             ),
-                            const SizedBox(height: 3),
-                            Text(
-                              reason.explanation,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              incident.riskScore == 0
+                                  ? 'USER-STARTED RECOVERY CASE\nNo automated risk score was assigned.'
+                                  : 'RISK SCORE / 100\nSaved from ScamShield analysis.',
                               style: const TextStyle(
                                 color: Palette.dim,
-                                fontSize: 12,
-                                height: 1.35,
+                                fontSize: 11,
+                                height: 1.4,
                               ),
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    const _SheetLabel('EVIDENCE / CONTENT'),
+                    const SizedBox(height: 7),
+                    GlassCard(
+                      child: SelectableText(
+                        incident.content.isEmpty
+                            ? 'No text recorded.'
+                            : incident.content,
+                        style: const TextStyle(
+                          color: Palette.text,
+                          height: 1.45,
                         ),
                       ),
                     ),
-                ],
-                const SizedBox(height: 12),
-                const _SheetLabel('INCIDENT DETAILS'),
-                const SizedBox(height: 7),
-                GlassCard(
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: amountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
+                    if (incident.reasons.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      const _SheetLabel('WHY SCAMSHIELD FLAGGED IT'),
+                      const SizedBox(height: 7),
+                      for (final reason in incident.reasons.take(8))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 7),
+                          child: GlassCard(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  reason.title,
+                                  style: const TextStyle(
+                                    color: Palette.text,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  reason.explanation,
+                                  style: const TextStyle(
+                                    color: Palette.dim,
+                                    fontSize: 12.5,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        style: const TextStyle(color: Palette.text),
-                        decoration: const InputDecoration(
-                          labelText: 'Amount lost / requested (optional)',
-                          labelStyle: TextStyle(color: Palette.dim),
-                        ),
-                      ),
-                      TextField(
-                        controller: referenceController,
-                        style: const TextStyle(color: Palette.text),
-                        decoration: const InputDecoration(
-                          labelText: 'Transaction / case reference (optional)',
-                          labelStyle: TextStyle(color: Palette.dim),
-                        ),
-                      ),
-                      TextField(
-                        controller: notesController,
-                        minLines: 3,
-                        maxLines: 6,
-                        style: const TextStyle(color: Palette.text),
-                        decoration: const InputDecoration(
-                          labelText: 'Notes / actions already taken',
-                          labelStyle: TextStyle(color: Palette.dim),
-                        ),
-                      ),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _StatusButton(
-                      label: 'REVIEWING',
-                      status: IncidentStatus.reviewing,
-                      incident: incident,
+                    const SizedBox(height: 13),
+                    const _SheetLabel('INCIDENT DETAILS'),
+                    const SizedBox(height: 7),
+                    GlassCard(
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: amountController,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'Amount lost / requested (optional)',
+                            ),
+                          ),
+                          TextField(
+                            controller: referenceController,
+                            decoration: const InputDecoration(
+                              labelText:
+                                  'Transaction / case reference (optional)',
+                            ),
+                          ),
+                          TextField(
+                            controller: notesController,
+                            minLines: 3,
+                            maxLines: 6,
+                            decoration: const InputDecoration(
+                              labelText: 'Notes / actions already taken',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    _StatusButton(
-                      label: 'REPORTED',
-                      status: IncidentStatus.reported,
-                      incident: incident,
+                    const SizedBox(height: 14),
+                    const _SheetLabel('STATUS'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final status in IncidentStatus.values)
+                          _StatusButton(
+                            status: status,
+                            selected: selectedStatus == status,
+                            onPressed: () {
+                              setSheetState(() => selectedStatus = status);
+                              ref
+                                  .read(incidentControllerProvider.notifier)
+                                  .updateIncident(
+                                    id: incident.id,
+                                    status: status,
+                                  );
+                            },
+                          ),
+                      ],
                     ),
-                    _StatusButton(
-                      label: 'RESOLVED',
-                      status: IncidentStatus.resolved,
-                      incident: incident,
+                    const SizedBox(height: 18),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        await ref
+                            .read(incidentControllerProvider.notifier)
+                            .updateIncident(
+                              id: incident.id,
+                              status: selectedStatus,
+                              notes: notesController.text.trim(),
+                              amount: double.tryParse(
+                                amountController.text.trim(),
+                              ),
+                              transactionReference:
+                                  referenceController.text.trim(),
+                            );
+                        if (sheetContext.mounted) {
+                          ScaffoldMessenger.of(sheetContext).showSnackBar(
+                            const SnackBar(
+                              behavior: SnackBarBehavior.floating,
+                              content: Text('Incident details saved.'),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('SAVE INCIDENT DETAILS'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        backgroundColor: Palette.cyan,
+                        foregroundColor: Palette.bg,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Palette.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Palette.line),
+                      ),
+                      child: SwitchListTile.adaptive(
+                        value: hidePhoneNumbers,
+                        onChanged: (value) => setSheetState(
+                          () => hidePhoneNumbers = value,
+                        ),
+                        title: const Text(
+                          'Hide phone numbers in PDF',
+                          style: TextStyle(
+                            color: Palette.text,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'Creates a share-safe copy while keeping the integrity fingerprint for the original evidence.',
+                          style: TextStyle(color: Palette.dim, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final fileName =
+                              await const IncidentPdfExportService().export(
+                            currentDraft(),
+                            hidePhoneNumbers: hidePhoneNumbers,
+                          );
+                          if (sheetContext.mounted) {
+                            ScaffoldMessenger.of(sheetContext).showSnackBar(
+                              SnackBar(
+                                behavior: SnackBarBehavior.floating,
+                                content: Text('$fileName downloaded.'),
+                              ),
+                            );
+                          }
+                        } catch (error) {
+                          if (sheetContext.mounted) {
+                            ScaffoldMessenger.of(sheetContext).showSnackBar(
+                              SnackBar(
+                                behavior: SnackBarBehavior.floating,
+                                content:
+                                    Text('Could not download report: $error'),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      label: const Text('DOWNLOAD PDF REPORT'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        foregroundColor: Palette.cyan,
+                        side: const BorderSide(color: Palette.cyan),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final report = const IncidentReportFormatter().format(
+                          currentDraft(),
+                        );
+                        await Clipboard.setData(ClipboardData(text: report));
+                        if (sheetContext.mounted) {
+                          ScaffoldMessenger.of(sheetContext).showSnackBar(
+                            const SnackBar(
+                              behavior: SnackBarBehavior.floating,
+                              content: Text('Text report copied.'),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.content_copy_rounded),
+                      label: const Text('Copy text report'),
+                    ),
+                    const Divider(height: 28),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: sheetContext,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Delete this incident?'),
+                            content: const Text(
+                              'This permanently removes the saved incident from this device. Export anything you need first.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              FilledButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Palette.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Delete permanently'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed != true) return;
+                        await ref
+                            .read(incidentControllerProvider.notifier)
+                            .deleteIncident(incident.id);
+                        if (sheetContext.mounted) {
+                          Navigator.of(sheetContext).pop();
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Palette.red,
+                      ),
+                      label: const Text(
+                        'Delete incident',
+                        style: TextStyle(color: Palette.red),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                GlowButton(
-                  label: 'SAVE INCIDENT DETAILS',
-                  icon: Icons.save_outlined,
-                  onTap: () async {
-                    await ref.read(incidentControllerProvider.notifier).updateIncident(
-                          id: incident.id,
-                          notes: notesController.text.trim(),
-                          amount: double.tryParse(amountController.text.trim()),
-                          transactionReference: referenceController.text.trim(),
-                        );
-                    if (sheetContext.mounted) {
-                      ScaffoldMessenger.of(sheetContext).showSnackBar(
-                        const SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          content: Text('Incident details saved.'),
-                        ),
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(height: 9),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    try {
-                      final fileName = await const IncidentPdfExportService()
-                          .export(currentDraft());
-                      if (sheetContext.mounted) {
-                        ScaffoldMessenger.of(sheetContext).showSnackBar(
-                          SnackBar(
-                            behavior: SnackBarBehavior.floating,
-                            content: Text('$fileName downloaded.'),
-                          ),
-                        );
-                      }
-                    } catch (error) {
-                      if (sheetContext.mounted) {
-                        ScaffoldMessenger.of(sheetContext).showSnackBar(
-                          SnackBar(
-                            behavior: SnackBarBehavior.floating,
-                            content: Text('Could not download report: $error'),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('DOWNLOAD PDF REPORT'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Palette.cyan,
-                    foregroundColor: Palette.bg,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-                const SizedBox(height: 9),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    final report = const IncidentReportFormatter().format(
-                      currentDraft(),
-                    );
-                    await Clipboard.setData(ClipboardData(text: report));
-                    if (sheetContext.mounted) {
-                      ScaffoldMessenger.of(sheetContext).showSnackBar(
-                        const SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          content: Text(
-                            'Text report copied. You can paste it into an email, bank chat or fraud report.',
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.content_copy_rounded),
-                  label: const Text('COPY TEXT REPORT'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Palette.cyan,
-                    side: const BorderSide(color: Palette.cyan),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-                const SizedBox(height: 9),
-                TextButton.icon(
-                  onPressed: () async {
-                    await ref
-                        .read(incidentControllerProvider.notifier)
-                        .deleteIncident(incident.id);
-                    if (sheetContext.mounted) {
-                      Navigator.of(sheetContext).pop();
-                    }
-                  },
-                  icon: const Icon(Icons.delete_outline, color: Palette.red),
-                  label: const Text(
-                    'Delete incident',
-                    style: TextStyle(color: Palette.red),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           );
         },
       );
     },
-  );
+  ).whenComplete(() {
+    notesController.dispose();
+    amountController.dispose();
+    referenceController.dispose();
+  });
 }
 
-class _StatusButton extends ConsumerWidget {
-  final String label;
+class _StatusButton extends StatelessWidget {
   final IncidentStatus status;
-  final IncidentRecord incident;
+  final bool selected;
+  final VoidCallback onPressed;
 
   const _StatusButton({
-    required this.label,
     required this.status,
-    required this.incident,
+    required this.selected,
+    required this.onPressed,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return OutlinedButton(
-      onPressed: () => ref
-          .read(incidentControllerProvider.notifier)
-          .updateIncident(id: incident.id, status: status),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: incident.status == status ? Palette.green : Palette.dim,
-        side: BorderSide(
-          color: incident.status == status ? Palette.green : Palette.glassBorder,
-        ),
-      ),
-      child: Text(label),
-    );
+  Widget build(BuildContext context) {
+    final (label, color) = _statusStyle(status);
+    return selected
+        ? FilledButton.icon(
+            onPressed: onPressed,
+            icon: const Icon(Icons.check_rounded, size: 17),
+            label: Text(label),
+            style: FilledButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Palette.bg,
+            ),
+          )
+        : OutlinedButton(
+            onPressed: onPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: color,
+              side: BorderSide(color: color.withOpacity(.55)),
+            ),
+            child: Text(label),
+          );
   }
 }
 
@@ -694,7 +1006,17 @@ class _SheetLabel extends StatelessWidget {
   }
 }
 
+(String, Color) _statusStyle(IncidentStatus status) {
+  return switch (status) {
+    IncidentStatus.reviewing => ('REVIEWING', Palette.cyan),
+    IncidentStatus.actionRequired => ('ACTION REQUIRED', Palette.amber),
+    IncidentStatus.reported => ('REPORTED', Palette.violet),
+    IncidentStatus.resolved => ('RESOLVED', Palette.green),
+  };
+}
+
 Color _verdictColor(IncidentRecord incident) {
+  if (incident.riskScore == 0) return Palette.cyan;
   switch (incident.verdict.name) {
     case 'highRisk':
       return Palette.red;
@@ -703,4 +1025,46 @@ Color _verdictColor(IncidentRecord incident) {
     default:
       return Palette.green;
   }
+}
+
+String _preview(String content) {
+  return content.replaceAll(RegExp(r'\s+'), ' ').trim();
+}
+
+String _friendlyDate(DateTime value) {
+  final now = DateTime.now();
+  final local = value.toLocal();
+  final today = DateTime(now.year, now.month, now.day);
+  final date = DateTime(local.year, local.month, local.day);
+  final difference = today.difference(date).inDays;
+
+  String clock(DateTime time) {
+    final hour = time.hour == 0
+        ? 12
+        : time.hour > 12
+            ? time.hour - 12
+            : time.hour;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  if (difference == 0) return 'Today, ${clock(local)}';
+  if (difference == 1) return 'Yesterday, ${clock(local)}';
+
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${local.day} ${months[local.month - 1]} ${local.year}, ${clock(local)}';
 }
