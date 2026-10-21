@@ -1,19 +1,35 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/privacy/cloud_analysis_consent_controller.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../../incidents/presentation/controllers/incident_controller.dart';
+import '../../data/repositories/cloud_scam_investigation_repository.dart';
+import '../../data/repositories/hybrid_scam_investigation_repository.dart';
 import '../../data/repositories/rule_based_scam_investigation_repository.dart';
 import '../../domain/entities/scam_investigation.dart';
 import '../../domain/repositories/scam_investigation_repository.dart';
 import '../../domain/use_cases/investigate_scam.dart';
 
+const _cloudAnalysisEndpoint = String.fromEnvironment(
+  'SCAMSHIELD_ANALYSIS_URL',
+  defaultValue: '',
+);
+
 final scamInvestigationRepositoryProvider =
     Provider<ScamInvestigationRepository>((ref) {
-  // Reuse the same prototype threat source that powers Partner View. This keeps
-  // number checks internally consistent: if Partner View says a number has been
-  // flagged, the investigator can see the same sample reputation evidence.
-  return RuleBasedScamInvestigationRepository(
+  final local = RuleBasedScamInvestigationRepository(
     prototypeThreatData: ref.watch(threatSimProvider),
+  );
+  final cloud = CloudScamInvestigationRepository(
+    endpoint: _cloudAnalysisEndpoint,
+  );
+  final consent = ref.watch(cloudAnalysisConsentProvider);
+
+  return HybridScamInvestigationRepository(
+    local: local,
+    cloud: cloud,
+    cloudConsentEnabled:
+        !consent.isLoading && consent.cloudAnalysisEnabled,
   );
 });
 
@@ -56,10 +72,6 @@ class ScamInvestigatorState {
 }
 
 /// Coordinates one investigation request for the presentation layer.
-///
-/// The controller knows about use cases, not widgets. Concerning investigations
-/// are also preserved in the Evidence Locker so users do not lose important
-/// context after leaving the Check screen.
 class ScamInvestigatorController extends StateNotifier<ScamInvestigatorState> {
   final InvestigateScam _investigateScam;
   final IncidentController _incidentController;
@@ -95,8 +107,6 @@ class ScamInvestigatorController extends StateNotifier<ScamInvestigatorState> {
         clearError: true,
       );
 
-      // Preserve only concerning investigations. Low-risk checks should remain
-      // lightweight and private instead of filling the Evidence Locker.
       if (result.verdict != InvestigationVerdict.lowRisk) {
         await _incidentController.saveInvestigation(
           sourceLabel: _sourceLabel(inputType, channel),
