@@ -32,6 +32,11 @@ dependencies:
   # Pure-Dart QR decoder. This keeps QR inspection local and works on web too.
   zxing2: ^0.2.4
 
+  # Evidence Locker metadata is stored locally so incident summaries survive
+  # restarts without requiring an account or backend. Large screenshot bytes
+  # are intentionally not stored in preferences.
+  shared_preferences: ^2.5.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
