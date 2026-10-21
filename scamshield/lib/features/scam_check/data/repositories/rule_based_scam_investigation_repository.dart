@@ -68,31 +68,39 @@ class RuleBasedScamInvestigationRepository
     if (hasFamilyImpersonation && hasMoneyRequest) adjustedScore += 15;
     if (hasUrgency && hasMoneyRequest) adjustedScore += 8;
 
-    // Number-only checks must not manufacture a scam score. Formatting can
-    // reveal a premium/service range, but a normal-looking mobile number can
-    // still be spoofed or abused. We therefore expose local number intelligence
-    // while keeping the overall verdict cautious until reputation data exists.
-    if (inputType == InvestigationInputType.phoneNumber && phones.isNotEmpty) {
+    // A number-only lookup is neutral unless ScamShield has actual evidence.
+    // A lack of reputation data is NOT a warning and must never create risk.
+    if (inputType == InvestigationInputType.phoneNumber) {
       final phoneRisk = phones
           .map((phone) => (phone.risk * 100).round())
           .fold<int>(0, (highest, value) => value > highest ? value : highest);
-      if (phoneRisk > adjustedScore) adjustedScore = phoneRisk;
+
+      // Ignore text-rule noise caused by a bare phone number. Only concrete
+      // number-range warnings may influence a direct number lookup for now.
+      adjustedScore = phoneRisk;
     }
 
     adjustedScore = adjustedScore.clamp(0, 100);
 
-    final reasons = <InvestigationReason>[
-      for (final reason in analysis.reasons)
-        InvestigationReason(
-          title: reason.title,
-          explanation: reason.detail,
-          severity: reason.weight,
-        ),
-    ];
+    final reasons = <InvestigationReason>[];
+
+    // Bare phone-number checks should not inherit unrelated wording rules from
+    // the legacy text analyzer. Message/screenshot checks still use them all.
+    if (inputType != InvestigationInputType.phoneNumber) {
+      reasons.addAll([
+        for (final reason in analysis.reasons)
+          InvestigationReason(
+            title: reason.title,
+            explanation: reason.detail,
+            severity: reason.weight,
+          ),
+      ]);
+    }
 
     // Add human-readable reasons for contextual signals that the older engine
     // may miss, especially pound-denominated money requests and curly apostrophes.
-    if (hasMoneyRequest &&
+    if (inputType != InvestigationInputType.phoneNumber &&
+        hasMoneyRequest &&
         !reasons.any((reason) => reason.title == 'Requests money')) {
       reasons.add(const InvestigationReason(
         title: 'Requests money',
@@ -102,7 +110,8 @@ class RuleBasedScamInvestigationRepository
       ));
     }
 
-    if (hasSecrecy &&
+    if (inputType != InvestigationInputType.phoneNumber &&
+        hasSecrecy &&
         !reasons.any((reason) => reason.title == 'Asks you to keep it secret')) {
       reasons.add(const InvestigationReason(
         title: 'Asks you to keep it secret',
@@ -112,7 +121,9 @@ class RuleBasedScamInvestigationRepository
       ));
     }
 
-    if (hasFamilyImpersonation && hasMoneyRequest) {
+    if (inputType != InvestigationInputType.phoneNumber &&
+        hasFamilyImpersonation &&
+        hasMoneyRequest) {
       reasons.add(const InvestigationReason(
         title: 'High-risk impersonation combination',
         explanation:
@@ -133,11 +144,15 @@ class RuleBasedScamInvestigationRepository
     }
 
     if (inputType == InvestigationInputType.phoneNumber) {
-      reasons.add(const InvestigationReason(
-        title: 'Number checked locally',
-        explanation:
-            'ScamShield has normalised the number and checked its format and known high-cost/service ranges. Live community or carrier reputation is not connected yet, so a normal-looking number must not be treated as verified.',
-        severity: 0.08,
+      final hasConcreteWarning = phones.any((phone) => phone.risk > 0);
+      reasons.add(InvestigationReason(
+        title: hasConcreteWarning
+            ? 'Local number warning found'
+            : 'No negative evidence found locally',
+        explanation: hasConcreteWarning
+            ? 'ScamShield found a concrete number-range or formatting concern. This is not the same as a verified scam report.'
+            : 'The number format itself did not show a known local warning. Live reputation data is not connected yet, so this does not prove the caller is trustworthy or fraudulent.',
+        severity: hasConcreteWarning ? 0.18 : 0.0,
       ));
     }
 
@@ -150,14 +165,16 @@ class RuleBasedScamInvestigationRepository
             : InvestigationVerdict.lowRisk;
 
     final category = inputType == InvestigationInputType.phoneNumber
-        ? 'Phone number intelligence'
+        ? (adjustedScore == 0
+            ? 'No negative evidence found'
+            : 'Phone number intelligence')
         : hasFamilyImpersonation && hasMoneyRequest
             ? 'Family impersonation'
             : analysis.type;
 
     final actions = inputType == InvestigationInputType.phoneNumber
         ? const [
-            'Do not trust a caller only because the number looks familiar; caller ID can be spoofed.',
+            'A normal-looking number is not proof of identity because caller ID can be spoofed.',
             'If the caller claims to be a bank, company or relative, end the call and contact them using a number you find independently.',
             'If the number appeared in a suspicious message, scan the full message or screenshot too so ScamShield can assess the context.',
           ]
