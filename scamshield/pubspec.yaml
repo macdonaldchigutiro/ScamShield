@@ -28,8 +28,7 @@ dependencies:
 
   # Pure-Dart image decoding used before QR analysis.
   # Pin 4.5.1 because it supports archive 3.x, which is also compatible with
-  # pdf 3.12.0 on this project's Dart 3.6.x SDK. Newer image releases require
-  # archive 4.5+, which conflicts with pdf 3.12.x.
+  # pdf 3.11.x on this project's Dart 3.6.x / Flutter SDK.
   image: 4.5.1
 
   # Pure-Dart QR decoder. This keeps QR inspection local and works on web too.
@@ -41,8 +40,9 @@ dependencies:
   shared_preferences: ^2.5.3
 
   # Generates professional multi-page incident reports entirely on-device.
-  # 3.12.0 supports Dart 3.6.x and remains compatible with image 4.5.1.
-  pdf: 3.12.0
+  # 3.11.3 is compatible with this Flutter SDK's pinned vector_math 2.1.4,
+  # while newer pdf releases require vector_math 2.2.0.
+  pdf: ^3.11.3
 
 dev_dependencies:
   flutter_test:
