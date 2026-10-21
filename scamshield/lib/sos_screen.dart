@@ -10,13 +10,21 @@ class _Phase {
 }
 
 class _Incident {
-  final String title, summary;
+  final String title;
+  final String summary;
   final IconData icon;
   final Color color;
   final List<_Phase> phases;
   final bool warn;
-  const _Incident(this.title, this.summary, this.icon, this.color, this.phases,
-      {this.warn = false});
+
+  const _Incident(
+    this.title,
+    this.summary,
+    this.icon,
+    this.color,
+    this.phases, {
+    this.warn = false,
+  });
 }
 
 const _incidents = [
@@ -53,8 +61,8 @@ const _incidents = [
       _Phase('RIGHT NOW', [
         'Try to register your number again. Ask for the SMS code and enter it yourself.',
         'No SMS code or no signal? Your SIM may have been swapped. Call your provider from another phone and ask them to check and block it.',
-        'If the other person set a two-step PIN, WhatsApp may make you wait several days. Use the official Contact us option in the app or on the WhatsApp website.',
-        'Tell your contacts through another channel (call, SMS or Facebook) not to send money.',
+        'If the other person set a two-step PIN, use the official WhatsApp recovery and support options.',
+        'Tell your contacts through another channel not to send money.',
       ]),
       _Phase('TODAY', [
         'Visit your provider\'s shop with your ID if your SIM or line is involved.',
@@ -64,7 +72,6 @@ const _incidents = [
       _Phase('THIS WEEK', [
         'Report it to the police and keep the report number.',
         'Once you are back in, turn on two-step verification and passkeys.',
-        'If it is a business account, tell customers through other channels that payment requests may be fake.',
       ]),
     ],
     warn: true,
@@ -88,7 +95,6 @@ const _incidents = [
       _Phase('THIS WEEK', [
         'Follow up with your provider using your reference.',
         'Beware of anyone who promises to recover your money for a fee.',
-        'Tell family and friends so they are warned.',
       ]),
     ],
   ),
@@ -143,17 +149,17 @@ const _incidents = [
     Palette.amber,
     [
       _Phase('RIGHT NOW', [
-        'On another device, use the official "forgot password" or recovery page for that service.',
+        'Use the official recovery page for that service from another device.',
         'Change the password and log out all other sessions.',
         'Turn on two-step verification.',
       ]),
       _Phase('TODAY', [
-        'Check what the hacker changed: recovery email, phone number, forwarding rules.',
+        'Check recovery email, phone number and forwarding rules for changes.',
         'Warn your friends not to click links or send money.',
         'Check your bank and mobile money accounts.',
       ]),
       _Phase('THIS WEEK', [
-        'Review which apps have access to the account and remove the ones you do not know.',
+        'Review connected apps and remove anything you do not recognise.',
         'Use a different strong password for each important account.',
       ]),
     ],
@@ -168,7 +174,7 @@ const _incidents = [
       _Phase('RIGHT NOW', [
         'Do not reply, tap links, send money or share any code.',
         'Call your friend on their phone, not by message, and tell them.',
-        'If you already tapped or shared a code, use the plan for that.',
+        'If you already tapped or shared a code, use the matching recovery plan.',
       ]),
       _Phase('TODAY', [
         'Take a screenshot and report the message.',
@@ -210,11 +216,15 @@ class SosScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
-        const Text('GET HELP NOW',
-            style: TextStyle(color: Palette.red, letterSpacing: 2, fontSize: 12)),
+        const Text(
+          'GET HELP NOW',
+          style: TextStyle(color: Palette.red, letterSpacing: 2, fontSize: 12),
+        ),
         const SizedBox(height: 4),
-        const Text('Tap what happened. We will walk you through it step by step. Being tricked can happen to anyone.',
-            style: TextStyle(color: Palette.dim, fontSize: 12, height: 1.35)),
+        const Text(
+          'Tap what happened. We will walk you through it step by step.',
+          style: TextStyle(color: Palette.dim, fontSize: 12, height: 1.35),
+        ),
         const SizedBox(height: 14),
         for (final inc in _incidents)
           Padding(
@@ -239,15 +249,23 @@ class SosScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(inc.title,
-                              style: const TextStyle(
-                                  color: Palette.text,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15)),
+                          Text(
+                            inc.title,
+                            style: const TextStyle(
+                              color: Palette.text,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text(inc.summary,
-                              style: const TextStyle(
-                                  color: Palette.dim, fontSize: 12, height: 1.3)),
+                          Text(
+                            inc.summary,
+                            style: const TextStyle(
+                              color: Palette.dim,
+                              fontSize: 12,
+                              height: 1.3,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -271,7 +289,10 @@ class SosScreen extends StatelessWidget {
         minChildSize: 0.5,
         maxChildSize: 0.97,
         expand: false,
-        builder: (_, controller) => _Plan(inc: inc, controller: controller),
+        builder: (_, controller) => _Plan(
+          inc: inc,
+          controller: controller,
+        ),
       ),
     );
   }
@@ -280,6 +301,7 @@ class SosScreen extends StatelessWidget {
 class _Plan extends StatefulWidget {
   final _Incident inc;
   final ScrollController controller;
+
   const _Plan({required this.inc, required this.controller});
 
   @override
@@ -289,7 +311,7 @@ class _Plan extends StatefulWidget {
 class _PlanState extends State<_Plan> {
   final Set<String> _done = {};
 
-  int get _total => widget.inc.phases.fold(0, (a, p) => a + p.steps.length);
+  int get _total => widget.inc.phases.fold(0, (sum, phase) => sum + phase.steps.length);
 
   @override
   Widget build(BuildContext context) {
@@ -316,8 +338,9 @@ class _PlanState extends State<_Plan> {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 48,
@@ -330,17 +353,43 @@ class _PlanState extends State<_Plan> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(inc.title,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Text(
+                    inc.title,
                     style: const TextStyle(
-                        color: Palette.text,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800)),
+                      color: Palette.text,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Semantics(
+                button: true,
+                label: 'Close recovery plan',
+                child: Tooltip(
+                  message: 'Close',
+                  child: Material(
+                    color: Colors.white.withOpacity(0.07),
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      tooltip: 'Close',
+                      icon: const Icon(Icons.close_rounded),
+                      color: Palette.text,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(inc.summary,
-              style: const TextStyle(color: Palette.dim, height: 1.4)),
+          Text(
+            inc.summary,
+            style: const TextStyle(color: Palette.dim, height: 1.4),
+          ),
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
@@ -352,31 +401,38 @@ class _PlanState extends State<_Plan> {
             ),
           ),
           const SizedBox(height: 4),
-          Text('${_done.length} of $_total steps done',
-              style: const TextStyle(color: Palette.dim, fontSize: 11)),
-          for (int p = 0; p < inc.phases.length; p++) ...[
+          Text(
+            '${_done.length} of $_total steps done',
+            style: const TextStyle(color: Palette.dim, fontSize: 11),
+          ),
+          for (var phaseIndex = 0; phaseIndex < inc.phases.length; phaseIndex++) ...[
             const SizedBox(height: 16),
-            Text(inc.phases[p].name,
-                style: TextStyle(
-                    color: p == 0 ? Palette.red : Palette.cyan,
-                    letterSpacing: 2,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800)),
+            Text(
+              inc.phases[phaseIndex].name,
+              style: TextStyle(
+                color: phaseIndex == 0 ? Palette.red : Palette.cyan,
+                letterSpacing: 2,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 8),
-            for (int i = 0; i < inc.phases[p].steps.length; i++)
+            for (var stepIndex = 0;
+                stepIndex < inc.phases[phaseIndex].steps.length;
+                stepIndex++)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    final key = '$p-$i';
+                    final key = '$phaseIndex-$stepIndex';
                     setState(() {
                       if (!_done.add(key)) _done.remove(key);
                     });
                   },
                   child: GlassCard(
                     padding: const EdgeInsets.all(12),
-                    borderColor: _done.contains('$p-$i')
+                    borderColor: _done.contains('$phaseIndex-$stepIndex')
                         ? Palette.green.withOpacity(0.5)
                         : null,
                     child: Row(
@@ -388,28 +444,32 @@ class _PlanState extends State<_Plan> {
                           height: 24,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _done.contains('$p-$i')
+                            color: _done.contains('$phaseIndex-$stepIndex')
                                 ? Palette.green
                                 : Colors.transparent,
                             border: Border.all(
-                                color: _done.contains('$p-$i')
-                                    ? Palette.green
-                                    : Palette.dim,
-                                width: 2),
+                              color: _done.contains('$phaseIndex-$stepIndex')
+                                  ? Palette.green
+                                  : Palette.dim,
+                              width: 2,
+                            ),
                           ),
-                          child: _done.contains('$p-$i')
+                          child: _done.contains('$phaseIndex-$stepIndex')
                               ? const Icon(Icons.check, size: 16, color: Palette.bg)
                               : null,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(inc.phases[p].steps[i],
-                              style: TextStyle(
-                                  color: _done.contains('$p-$i')
-                                      ? Palette.dim
-                                      : Palette.text,
-                                  height: 1.4,
-                                  fontSize: 14)),
+                          child: Text(
+                            inc.phases[phaseIndex].steps[stepIndex],
+                            style: TextStyle(
+                              color: _done.contains('$phaseIndex-$stepIndex')
+                                  ? Palette.dim
+                                  : Palette.text,
+                              height: 1.4,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -418,16 +478,18 @@ class _PlanState extends State<_Plan> {
               ),
           ],
           const SizedBox(height: 14),
-          const Text('WHO TO CONTACT',
-              style: TextStyle(color: Palette.cyan, letterSpacing: 2, fontSize: 11)),
+          const Text(
+            'WHO TO CONTACT',
+            style: TextStyle(color: Palette.cyan, letterSpacing: 2, fontSize: 11),
+          ),
           const SizedBox(height: 8),
           const GlassCard(
             child: Text(
-              '•  Your mobile provider: use the official number from their website, app or SIM pack.\n'
-              '•  Your bank or mobile money provider.\n'
-              '•  The police, for a report number.\n'
-              '•  The app\'s official help centre (WhatsApp, Facebook, Google).\n\n'
-              'Never use a phone number or link that came from a message.',
+              '• Your mobile provider: use the official number from their website, app or SIM pack.\n'
+              '• Your bank or mobile money provider.\n'
+              '• The police, for a report number.\n'
+              '• The official help centre for the affected app or service.\n\n'
+              'Never use a phone number or link that came from the suspicious message.',
               style: TextStyle(color: Palette.text, height: 1.5, fontSize: 13),
             ),
           ),
@@ -437,16 +499,17 @@ class _PlanState extends State<_Plan> {
               label: 'COPY A WARNING FOR MY CONTACTS',
               icon: Icons.ios_share,
               onTap: () {
-                Clipboard.setData(const ClipboardData(
-                  text: 'Warning: my account may have been hacked. Do not reply to '
-                      'messages asking for money or a code, even if they look like '
-                      'they are from me. Please call me on my number to check. '
-                      'Share this with others.',
-                ));
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  content: Text('Copied. Paste it into SMS, Facebook or a call script.'),
-                ));
+                Clipboard.setData(
+                  const ClipboardData(
+                    text: 'Warning: my account may have been hacked. Do not reply to messages asking for money or a code, even if they look like they are from me. Please call me directly to check.',
+                  ),
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    behavior: SnackBarBehavior.floating,
+                    content: Text('Warning copied.'),
+                  ),
+                );
               },
             ),
           ],
