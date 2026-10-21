@@ -13,9 +13,38 @@ class RadarScreen extends StatelessWidget {
   final ThreatSim sim;
   const RadarScreen({super.key, required this.sim});
 
-  void _open(BuildContext context, Widget page) {
+  /// Opens a standalone feature from Home inside a consistent ScamShield page.
+  ///
+  /// Previously Home pushed raw feature widgets. Those pages had no visible
+  /// way back, which made users refresh the browser to recover. Wrapping pushed
+  /// content in a Scaffold gives every standalone flow a predictable Back
+  /// button while keeping the bottom-tab versions unchanged.
+  void _open(BuildContext context, Widget page, String title) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => page),
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Palette.bg,
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF070C1C),
+            foregroundColor: Palette.text,
+            elevation: 0,
+            leading: IconButton(
+              tooltip: 'Back',
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(
+              title,
+              style: const TextStyle(
+                color: Palette.text,
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          body: SafeArea(child: page),
+        ),
+      ),
     );
   }
 
@@ -159,7 +188,7 @@ class RadarScreen extends StatelessWidget {
                   GlowButton(
                     label: 'CHECK SOMETHING SUSPICIOUS',
                     icon: Icons.manage_search_rounded,
-                    onTap: () => _open(context, const CheckScreen()),
+                    onTap: () => _open(context, const CheckScreen(), 'Check'),
                   ),
                   const SizedBox(height: 10),
                   const Row(
@@ -288,7 +317,7 @@ class RadarScreen extends StatelessWidget {
                 title: 'Check a message',
                 subtitle: 'SMS, WhatsApp, email or social message',
                 color: Palette.cyan,
-                onTap: () => _open(context, const CheckScreen()),
+                onTap: () => _open(context, const CheckScreen(), 'Check a message'),
               ),
               _quickAction(
                 context,
@@ -296,7 +325,7 @@ class RadarScreen extends StatelessWidget {
                 title: 'Check a suspicious link',
                 subtitle: 'Inspect wording, domains and common scam tricks',
                 color: Palette.violet,
-                onTap: () => _open(context, const CheckScreen()),
+                onTap: () => _open(context, const CheckScreen(), 'Check a link'),
               ),
               _quickAction(
                 context,
@@ -304,7 +333,7 @@ class RadarScreen extends StatelessWidget {
                 title: 'Improve my protection',
                 subtitle: 'Harden WhatsApp, SIM, email and money accounts',
                 color: Palette.green,
-                onTap: () => _open(context, const ProtectScreen()),
+                onTap: () => _open(context, const ProtectScreen(), 'Protection'),
               ),
               _quickAction(
                 context,
@@ -312,7 +341,7 @@ class RadarScreen extends StatelessWidget {
                 title: 'I think I have been scammed',
                 subtitle: 'Get immediate recovery steps and damage control',
                 color: Palette.red,
-                onTap: () => _open(context, const SosScreen()),
+                onTap: () => _open(context, const SosScreen(), 'Get help'),
               ),
             ];
 
