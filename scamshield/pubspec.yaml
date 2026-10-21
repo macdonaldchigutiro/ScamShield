@@ -27,7 +27,10 @@ dependencies:
   flutter_tesseract_ocr: ^0.4.31
 
   # Pure-Dart image decoding used before QR analysis.
-  image: ^4.12.0
+  # Pin 4.5.1 because it supports archive 3.x, which is also compatible with
+  # pdf 3.12.0 on this project's Dart 3.6.x SDK. Newer image releases require
+  # archive 4.5+, which conflicts with pdf 3.12.x.
+  image: 4.5.1
 
   # Pure-Dart QR decoder. This keeps QR inspection local and works on web too.
   zxing2: ^0.2.4
@@ -38,8 +41,8 @@ dependencies:
   shared_preferences: ^2.5.3
 
   # Generates professional multi-page incident reports entirely on-device.
-  # Kept compatible with the Flutter SDK currently used by this project.
-  pdf: ^3.12.0
+  # 3.12.0 supports Dart 3.6.x and remains compatible with image 4.5.1.
+  pdf: 3.12.0
 
 dev_dependencies:
   flutter_test:
