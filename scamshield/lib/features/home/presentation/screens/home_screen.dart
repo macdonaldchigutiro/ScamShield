@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../check_screen.dart';
 import '../../../../protect_screen.dart';
-import '../../../../radar_view.dart';
 import '../../../../sim.dart';
 import '../../../../sos_screen.dart';
 import '../../../../theme.dart';
@@ -13,9 +12,9 @@ import '../../../incidents/presentation/controllers/incident_controller.dart';
 
 /// ScamShield's action-first Home dashboard.
 ///
-/// The radar remains clearly labelled as simulated prototype intelligence,
-/// while the Recent Investigations section is driven by the user's real local
-/// Evidence Locker records. This keeps demo data and user data visibly separate.
+/// Home deliberately shows only real local ScamShield investigation data.
+/// Prototype simulation data is kept out of the customer-facing activity view
+/// so users never confuse training/demo events with genuine investigations.
 class HomeScreen extends ConsumerWidget {
   final ThreatSim sim;
 
@@ -53,12 +52,35 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final incidentState = ref.watch(incidentControllerProvider);
-    final recent = incidentState.incidents.take(4).toList(growable: false);
-    final threatColor = sim.threatLevel == 'HIGH'
-        ? Palette.red
-        : sim.threatLevel == 'ELEVATED'
-            ? Palette.amber
-            : Palette.green;
+    final incidents = incidentState.incidents;
+    final recent = incidents.take(4).toList(growable: false);
+
+    final highRisk = incidents
+        .where((incident) => incident.verdict.name == 'highRisk')
+        .length;
+    final suspicious = incidents
+        .where((incident) => incident.verdict.name == 'suspicious')
+        .length;
+    final actionNeeded = incidents
+        .where((incident) => incident.status == IncidentStatus.actionRequired)
+        .length;
+    final reported = incidents
+        .where((incident) => incident.status == IncidentStatus.reported)
+        .length;
+
+    final averageRisk = incidents.isEmpty
+        ? 0
+        : (incidents.fold<int>(0, (sum, item) => sum + item.riskScore) /
+                incidents.length)
+            .round();
+
+    final categoryCounts = <String, int>{};
+    for (final incident in incidents) {
+      categoryCounts[incident.category] =
+          (categoryCounts[incident.category] ?? 0) + 1;
+    }
+    final topCategories = categoryCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
@@ -152,141 +174,20 @@ class HomeScreen extends ConsumerWidget {
           },
         ),
         const SizedBox(height: 14),
-        GlassCard(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'DEMO THREAT MONITOR',
-                          style: TextStyle(
-                            color: Palette.cyan,
-                            letterSpacing: 2,
-                            fontSize: 11,
-                          ),
-                        ),
-                        SizedBox(height: 3),
-                        Text(
-                          'Prototype simulation — not live external threat data',
-                          style: TextStyle(color: Palette.dim, fontSize: 10),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Palette.amber.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Palette.amber),
-                    ),
-                    child: const Text(
-                      'SIMULATED DATA',
-                      style: TextStyle(
-                        color: Palette.amber,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              LayoutBuilder(
-                builder: (context, box) {
-                  final wide = box.maxWidth > 820;
-                  final radar = SizedBox(
-                    height: 270,
-                    child: ThreatRadar(sim: sim),
-                  );
-                  final summary = Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Training view',
-                        style: TextStyle(
-                          color: Palette.text,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      const Text(
-                        'This animation demonstrates how future threat intelligence could look. It does not represent live reports from users, banks or networks.',
-                        style: TextStyle(
-                          color: Palette.dim,
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          _Metric(
-                            value: '${sim.scanned}',
-                            label: 'DEMO SCANS',
-                            color: Palette.cyan,
-                          ),
-                          const SizedBox(width: 8),
-                          _Metric(
-                            value: '${sim.blocked}',
-                            label: 'DEMO BLOCKED',
-                            color: Palette.red,
-                          ),
-                          const SizedBox(width: 8),
-                          _Metric(
-                            value: '${sim.suspicious}',
-                            label: 'DEMO REVIEW',
-                            color: Palette.amber,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: threatColor.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(14),
-                          border:
-                              Border.all(color: threatColor.withOpacity(0.22)),
-                        ),
-                        child: Text(
-                          'Simulation threat level: ${sim.threatLevel}',
-                          style: TextStyle(
-                            color: threatColor,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-
-                  if (wide) {
-                    return Row(
-                      children: [
-                        Expanded(flex: 5, child: radar),
-                        const SizedBox(width: 18),
-                        Expanded(flex: 5, child: summary),
-                      ],
-                    );
-                  }
-
-                  return Column(
-                    children: [radar, const SizedBox(height: 8), summary],
-                  );
-                },
-              ),
-            ],
+        _InvestigationPulse(
+          isLoading: incidentState.isLoading,
+          total: incidents.length,
+          highRisk: highRisk,
+          suspicious: suspicious,
+          actionNeeded: actionNeeded,
+          reported: reported,
+          averageRisk: averageRisk,
+          topCategories: topCategories.take(3).toList(growable: false),
+          onOpenEvidence: () => context.push('/evidence'),
+          onRunCheck: () => _open(
+            context,
+            const CheckScreen(),
+            'Check something suspicious',
           ),
         ),
         const SizedBox(height: 16),
@@ -396,6 +297,340 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
+/// Real activity summary based only on investigations stored by ScamShield.
+class _InvestigationPulse extends StatelessWidget {
+  final bool isLoading;
+  final int total;
+  final int highRisk;
+  final int suspicious;
+  final int actionNeeded;
+  final int reported;
+  final int averageRisk;
+  final List<MapEntry<String, int>> topCategories;
+  final VoidCallback onOpenEvidence;
+  final VoidCallback onRunCheck;
+
+  const _InvestigationPulse({
+    required this.isLoading,
+    required this.total,
+    required this.highRisk,
+    required this.suspicious,
+    required this.actionNeeded,
+    required this.reported,
+    required this.averageRisk,
+    required this.topCategories,
+    required this.onOpenEvidence,
+    required this.onRunCheck,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(18),
+      borderColor: Palette.cyan.withOpacity(0.28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'INVESTIGATION PULSE',
+                      style: TextStyle(
+                        color: Palette.cyan,
+                        letterSpacing: 2,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Real ScamShield activity saved on this device',
+                      style: TextStyle(color: Palette.dim, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Palette.green.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Palette.green.withOpacity(0.55)),
+                ),
+                child: const Text(
+                  'ACTUAL DATA',
+                  style: TextStyle(
+                    color: Palette.green,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(color: Palette.cyan),
+              ),
+            )
+          else if (total == 0)
+            _EmptyPulse(onRunCheck: onRunCheck)
+          else ...[
+            LayoutBuilder(
+              builder: (context, box) {
+                final wide = box.maxWidth > 760;
+                final metrics = Row(
+                  children: [
+                    _Metric(
+                      value: '$total',
+                      label: 'SAVED',
+                      color: Palette.cyan,
+                    ),
+                    const SizedBox(width: 8),
+                    _Metric(
+                      value: '$highRisk',
+                      label: 'HIGH RISK',
+                      color: Palette.red,
+                    ),
+                    const SizedBox(width: 8),
+                    _Metric(
+                      value: '$actionNeeded',
+                      label: 'ACTION NEEDED',
+                      color: Palette.amber,
+                    ),
+                  ],
+                );
+
+                final insight = Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.025),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Palette.glassBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'WHAT YOUR INVESTIGATIONS SHOW',
+                        style: TextStyle(
+                          color: Palette.text,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _InsightLine(
+                        label: 'Average saved risk',
+                        value: '$averageRisk / 100',
+                        color: averageRisk >= 60
+                            ? Palette.red
+                            : averageRisk >= 25
+                                ? Palette.amber
+                                : Palette.green,
+                      ),
+                      _InsightLine(
+                        label: 'Suspicious investigations',
+                        value: '$suspicious',
+                        color: Palette.amber,
+                      ),
+                      _InsightLine(
+                        label: 'Marked reported',
+                        value: '$reported',
+                        color: Palette.violet,
+                      ),
+                      if (topCategories.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        const Text(
+                          'MOST COMMON CATEGORIES',
+                          style: TextStyle(
+                            color: Palette.dim,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        for (final entry in topCategories)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.circle,
+                                  size: 6,
+                                  color: Palette.cyan,
+                                ),
+                                const SizedBox(width: 7),
+                                Expanded(
+                                  child: Text(
+                                    entry.key,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Palette.text,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '${entry.value}',
+                                  style: const TextStyle(
+                                    color: Palette.cyan,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
+                );
+
+                if (wide) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: metrics),
+                      const SizedBox(width: 14),
+                      Expanded(child: insight),
+                    ],
+                  );
+                }
+
+                return Column(
+                  children: [
+                    metrics,
+                    const SizedBox(height: 12),
+                    insight,
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: onOpenEvidence,
+                icon: const Icon(
+                  Icons.inventory_2_outlined,
+                  color: Palette.cyan,
+                  size: 17,
+                ),
+                label: const Text(
+                  'Open Evidence Locker',
+                  style: TextStyle(color: Palette.cyan),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyPulse extends StatelessWidget {
+  final VoidCallback onRunCheck;
+
+  const _EmptyPulse({required this.onRunCheck});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Palette.cyan.withOpacity(0.035),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Palette.glassBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.insights_outlined, color: Palette.cyan),
+              SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'No investigation activity yet',
+                  style: TextStyle(
+                    color: Palette.text,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'This panel will build from actual suspicious and high-risk checks saved by ScamShield. No simulated activity is shown here.',
+            style: TextStyle(color: Palette.dim, fontSize: 11.5, height: 1.4),
+          ),
+          const SizedBox(height: 9),
+          TextButton(
+            onPressed: onRunCheck,
+            child: const Text(
+              'Run a check',
+              style: TextStyle(color: Palette.cyan),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InsightLine extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _InsightLine({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(color: Palette.dim, fontSize: 11),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _HeroCard extends StatelessWidget {
   final VoidCallback onCheck;
 
@@ -464,7 +699,7 @@ class _HeroCard extends StatelessWidget {
             ],
           );
 
-          final score = Container(
+          final privacy = Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
@@ -509,13 +744,13 @@ class _HeroCard extends StatelessWidget {
               children: [
                 Expanded(flex: 6, child: intro),
                 const SizedBox(width: 24),
-                Expanded(flex: 4, child: score),
+                Expanded(flex: 4, child: privacy),
               ],
             );
           }
 
           return Column(
-            children: [intro, const SizedBox(height: 18), score],
+            children: [intro, const SizedBox(height: 18), privacy],
           );
         },
       ),
@@ -653,7 +888,7 @@ class _RecentInvestigationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _verdictColor(incident.verdict);
+    final color = _verdictColor(incident.verdict.name);
     final created = incident.createdAt.toLocal();
     final when =
         '${created.day.toString().padLeft(2, '0')}/${created.month.toString().padLeft(2, '0')} '
@@ -674,7 +909,7 @@ class _RecentInvestigationCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(13),
                 color: color.withOpacity(0.12),
               ),
-              child: Icon(_verdictIcon(incident.verdict), color: color),
+              child: Icon(_verdictIcon(incident.verdict.name), color: color),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -756,24 +991,24 @@ class _RecentInvestigationCard extends StatelessWidget {
   }
 }
 
-Color _verdictColor(InvestigationVerdict verdict) {
-  switch (verdict) {
-    case InvestigationVerdict.highRisk:
+Color _verdictColor(String verdictName) {
+  switch (verdictName) {
+    case 'highRisk':
       return Palette.red;
-    case InvestigationVerdict.suspicious:
+    case 'suspicious':
       return Palette.amber;
-    case InvestigationVerdict.lowRisk:
+    default:
       return Palette.green;
   }
 }
 
-IconData _verdictIcon(InvestigationVerdict verdict) {
-  switch (verdict) {
-    case InvestigationVerdict.highRisk:
+IconData _verdictIcon(String verdictName) {
+  switch (verdictName) {
+    case 'highRisk':
       return Icons.gpp_bad_rounded;
-    case InvestigationVerdict.suspicious:
+    case 'suspicious':
       return Icons.warning_amber_rounded;
-    case InvestigationVerdict.lowRisk:
+    default:
       return Icons.verified_user_rounded;
   }
 }
