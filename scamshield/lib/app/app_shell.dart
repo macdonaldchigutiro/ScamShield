@@ -12,11 +12,11 @@ import '../protect_screen.dart';
 import '../sos_screen.dart';
 import '../theme.dart';
 
-/// Persistent application shell for ScamShield.
+/// Persistent application shell.
 ///
-/// Mobile keeps familiar bottom navigation. Wider screens switch to a side rail
-/// and capped content width so the interface does not stretch like a phone UI
-/// across a desktop monitor.
+/// Desktop uses a labelled navigation rail and capped content width. Mobile
+/// keeps a familiar bottom bar. The shell owns navigation only; Home owns its
+/// own content hierarchy, including protection status and recent activity.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
@@ -43,11 +43,7 @@ class AppShell extends ConsumerWidget {
     }
 
     final pages = <Widget>[
-      _HomeWithProtection(
-        protection: protection,
-        onImproveProtection: () => selectTab(2),
-        child: HomeScreen(sim: sim),
-      ),
+      const HomeScreen(),
       const InvestigationHubScreen(),
       const ProtectScreen(),
       const SosScreen(),
@@ -95,6 +91,7 @@ class AppShell extends ConsumerWidget {
                   selectedIndex: selectedTab,
                   onSelected: selectTab,
                 ),
+                const VerticalDivider(width: 1, color: Palette.line),
                 Expanded(child: content),
               ],
             ),
@@ -104,8 +101,6 @@ class AppShell extends ConsumerWidget {
         return Scaffold(
           body: content,
           bottomNavigationBar: NavigationBar(
-            backgroundColor: const Color(0xFF070C1C),
-            indicatorColor: Palette.cyan.withOpacity(0.18),
             selectedIndex: selectedTab,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             onDestinationSelected: selectTab,
@@ -122,127 +117,23 @@ class AppShell extends ConsumerWidget {
               ),
               NavigationDestination(
                 icon: Icon(Icons.verified_user_outlined),
+                selectedIcon: Icon(Icons.verified_user_rounded),
                 label: 'Protect',
               ),
               NavigationDestination(
-                icon: Icon(Icons.support_agent),
+                icon: Icon(Icons.support_agent_outlined),
+                selectedIcon: Icon(Icons.support_agent),
                 label: 'Help',
               ),
               NavigationDestination(
                 icon: Icon(Icons.menu_book_outlined),
+                selectedIcon: Icon(Icons.menu_book),
                 label: 'Learn',
               ),
             ],
           ),
         );
       },
-    );
-  }
-}
-
-/// Home-only protection status built from user-confirmed safety actions.
-class _HomeWithProtection extends StatelessWidget {
-  final ProtectionState protection;
-  final VoidCallback onImproveProtection;
-  final Widget child;
-
-  const _HomeWithProtection({
-    required this.protection,
-    required this.onImproveProtection,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = protection.percentage >= 80
-        ? Palette.green
-        : protection.percentage >= 50
-            ? Palette.amber
-            : Palette.red;
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
-          child: GlassCard(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            borderColor: color.withOpacity(.36),
-            child: protection.isLoading
-                ? const Row(
-                    children: [
-                      SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Palette.cyan,
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Text(
-                        'Loading your protection status…',
-                        style: TextStyle(color: Palette.dim),
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: color.withOpacity(.12),
-                          border: Border.all(color: color.withOpacity(.45)),
-                        ),
-                        child: Text(
-                          '${protection.percentage}%',
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'YOUR PROTECTION STATUS',
-                              style: TextStyle(
-                                color: Palette.text,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              '${protection.completedCount} of ${protection.totalCount} safety steps confirmed. This score comes only from actions you mark complete.',
-                              style: const TextStyle(
-                                color: Palette.dim,
-                                fontSize: 11.5,
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      TextButton.icon(
-                        onPressed: onImproveProtection,
-                        icon: const Icon(Icons.verified_user_outlined, size: 17),
-                        label: const Text('Improve'),
-                        style: TextButton.styleFrom(foregroundColor: color),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-        Expanded(child: child),
-      ],
     );
   }
 }
@@ -259,12 +150,10 @@ class _DesktopNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NavigationRail(
-      backgroundColor: const Color(0xFF070C1C),
-      indicatorColor: Palette.cyan.withOpacity(.16),
       selectedIndex: selectedIndex,
       onDestinationSelected: onSelected,
       labelType: NavigationRailLabelType.all,
-      minWidth: 92,
+      minWidth: 96,
       destinations: const [
         NavigationRailDestination(
           icon: Icon(Icons.home_outlined),
@@ -282,11 +171,13 @@ class _DesktopNavigation extends StatelessWidget {
           label: Text('Protect'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.support_agent),
+          icon: Icon(Icons.support_agent_outlined),
+          selectedIcon: Icon(Icons.support_agent),
           label: Text('Help'),
         ),
         NavigationRailDestination(
           icon: Icon(Icons.menu_book_outlined),
+          selectedIcon: Icon(Icons.menu_book),
           label: Text('Learn'),
         ),
       ],
@@ -294,7 +185,7 @@ class _DesktopNavigation extends StatelessWidget {
   }
 }
 
-/// Shared brand header and high-priority utility actions.
+/// Brand header with plainly labelled high-priority actions.
 class _AppHeader extends StatelessWidget {
   final bool desktop;
   final int protectionPercentage;
@@ -316,33 +207,33 @@ class _AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final protectionColor = protectionPercentage >= 80
+        ? Palette.green
+        : protectionPercentage >= 40
+            ? Palette.amber
+            : Palette.cyan;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 10, 8),
+      padding: const EdgeInsets.fromLTRB(24, 14, 12, 10),
       child: Row(
         children: [
-          Expanded(
+          const Icon(Icons.shield_rounded, color: Palette.cyan, size: 28),
+          const SizedBox(width: 10),
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ShaderMask(
-                  shaderCallback: shieldGradient.createShader,
-                  child: const Text(
-                    'SCAMSHIELD',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 5,
-                      color: Colors.white,
-                    ),
+                Text(
+                  'ScamShield',
+                  style: TextStyle(
+                    color: Palette.text,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const Text(
-                  'DIGITAL FRAUD DEFENCE',
-                  style: TextStyle(
-                    color: Palette.dim,
-                    fontSize: 10.5,
-                    letterSpacing: 2.5,
-                  ),
+                Text(
+                  'Digital fraud defence',
+                  style: TextStyle(color: Palette.dim, fontSize: 12),
                 ),
               ],
             ),
@@ -351,11 +242,7 @@ class _AppHeader extends StatelessWidget {
             _HeaderAction(
               icon: Icons.verified_user_outlined,
               label: 'Protection $protectionPercentage%',
-              color: protectionPercentage >= 80
-                  ? Palette.green
-                  : protectionPercentage >= 50
-                      ? Palette.amber
-                      : Palette.red,
+              color: protectionColor,
               onPressed: onProtectionPressed,
             ),
             _HeaderAction(
@@ -372,32 +259,33 @@ class _AppHeader extends StatelessWidget {
             ),
             _HeaderAction(
               icon: Icons.emergency_rounded,
-              label: 'EMERGENCY',
+              label: "I've been scammed",
               color: Palette.red,
               filled: true,
               onPressed: onEmergencyPressed,
             ),
-            _HeaderAction(
-              icon: Icons.help_outline,
-              label: 'Help',
-              color: Palette.dim,
+            IconButton(
+              tooltip: 'Help',
               onPressed: onHelpPressed,
+              color: Palette.dim,
+              icon: const Icon(Icons.help_outline),
             ),
           ] else ...[
             IconButton(
               tooltip: 'Evidence Locker',
               onPressed: onEvidencePressed,
-              icon: const Icon(Icons.inventory_2_outlined, color: Palette.cyan),
+              color: Palette.cyan,
+              icon: const Icon(Icons.inventory_2_outlined),
             ),
-            IconButton(
-              tooltip: 'Emergency help',
+            FilledButton(
               onPressed: onEmergencyPressed,
-              icon: const Icon(Icons.emergency_rounded, color: Palette.red),
-            ),
-            IconButton(
-              tooltip: 'Help',
-              onPressed: onHelpPressed,
-              icon: const Icon(Icons.help_outline, color: Palette.dim),
+              style: FilledButton.styleFrom(
+                backgroundColor: Palette.red,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              child: const Icon(Icons.emergency_rounded),
             ),
           ],
         ],
@@ -427,20 +315,17 @@ class _HeaderAction extends StatelessWidget {
       padding: const EdgeInsets.only(left: 6),
       child: TextButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, color: filled ? Colors.white : color, size: 18),
-        label: Text(
-          label,
-          style: TextStyle(
-            color: filled ? Colors.white : color,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        icon: Icon(icon, size: 18),
+        label: Text(label),
         style: TextButton.styleFrom(
-          backgroundColor: filled ? color : color.withOpacity(.06),
-          side: BorderSide(color: color.withOpacity(filled ? .9 : .28)),
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          foregroundColor: filled ? Colors.white : color,
+          backgroundColor: filled ? color : Colors.transparent,
+          side: BorderSide(color: filled ? color : Palette.line),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          minimumSize: const Size(48, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
       ),
     );
