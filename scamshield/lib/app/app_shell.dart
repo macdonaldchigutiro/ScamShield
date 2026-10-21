@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../core/providers/app_providers.dart';
+import '../features/incidents/presentation/screens/evidence_locker_screen.dart';
 import '../features/scam_check/presentation/screens/investigation_hub_screen.dart';
 import '../learn_screen.dart';
+import '../partner_screen.dart';
 import '../protect_screen.dart';
 import '../radar_screen.dart';
 import '../sos_screen.dart';
@@ -28,7 +29,29 @@ class AppShell extends ConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-              _AppHeader(onHelpPressed: () => _showAboutSheet(context)),
+              _AppHeader(
+                onEvidencePressed: () {
+                  // Use the local Navigator for these utility pages so the user
+                  // always gets a predictable in-app Back path on web/mobile.
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const EvidenceLockerScreen(),
+                    ),
+                  );
+                },
+                onPartnerPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => PartnerScreen(sim: sim),
+                    ),
+                  );
+                },
+                onHelpPressed: () {
+                  // Help is a primary tab, so switch tabs instead of stacking a
+                  // second page. This preserves the user's place in the shell.
+                  ref.read(selectedHomeTabProvider.notifier).state = 3;
+                },
+              ),
               Expanded(
                 child: AnimatedBuilder(
                   // ThreatSim is currently a ChangeNotifier. AnimatedBuilder
@@ -90,9 +113,15 @@ class AppShell extends ConsumerWidget {
 
 /// Brand header shared by the main product areas.
 class _AppHeader extends StatelessWidget {
+  final VoidCallback onEvidencePressed;
+  final VoidCallback onPartnerPressed;
   final VoidCallback onHelpPressed;
 
-  const _AppHeader({required this.onHelpPressed});
+  const _AppHeader({
+    required this.onEvidencePressed,
+    required this.onPartnerPressed,
+    required this.onHelpPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -129,23 +158,22 @@ class _AppHeader extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'Evidence Locker',
-            onPressed: () => context.push('/evidence'),
+            onPressed: onEvidencePressed,
             icon: const Icon(
               Icons.inventory_2_outlined,
               color: Palette.cyan,
             ),
           ),
           IconButton(
-            tooltip: 'Partner intelligence',
-            // go_router keeps route changes declarative and deep-link ready.
-            onPressed: () => context.push('/partner'),
+            tooltip: 'Partner View',
+            onPressed: onPartnerPressed,
             icon: const Icon(
               Icons.business_center_outlined,
               color: Palette.violet,
             ),
           ),
           IconButton(
-            tooltip: 'How ScamShield works',
+            tooltip: 'Help',
             onPressed: onHelpPressed,
             icon: const Icon(Icons.help_outline, color: Palette.dim),
           ),
@@ -153,96 +181,4 @@ class _AppHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Explains the product in plain language without taking users away from their
-/// current task.
-void _showAboutSheet(BuildContext context) {
-  Widget point(IconData icon, String title, String body) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Palette.cyan),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Palette.text,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  body,
-                  style: const TextStyle(
-                    color: Palette.dim,
-                    fontSize: 13,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (_) => Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0A1226),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(top: BorderSide(color: Palette.glassBorder)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'HOW SCAMSHIELD WORKS',
-            style: TextStyle(
-              color: Palette.cyan,
-              letterSpacing: 3,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 16),
-          point(
-            Icons.shield_outlined,
-            'Four layers of defence',
-            'Check suspicious activity, strengthen your accounts, recover quickly and learn common scam tactics.',
-          ),
-          point(
-            Icons.hub_outlined,
-            'All major channels',
-            'SMS, WhatsApp, social media, email, phone calls, links, screenshots, QR codes and SIM-swap warning signs.',
-          ),
-          point(
-            Icons.inventory_2_outlined,
-            'Evidence Locker',
-            'Suspicious and high-risk investigations are preserved as structured incidents for recovery and reporting.',
-          ),
-          point(
-            Icons.lock_outline,
-            'Privacy by design',
-            'Where possible, checks happen on your device. Cloud services will be clearly disclosed when introduced.',
-          ),
-          point(
-            Icons.info_outline,
-            'Decision support, not blind trust',
-            'ScamShield explains why something looks risky and tells you the safest next action.',
-          ),
-        ],
-      ),
-    ),
-  );
 }
