@@ -43,7 +43,11 @@ class AppShell extends ConsumerWidget {
     }
 
     final pages = <Widget>[
-      HomeScreen(sim: sim),
+      _HomeWithProtection(
+        protection: protection,
+        onImproveProtection: () => selectTab(2),
+        child: HomeScreen(sim: sim),
+      ),
       const InvestigationHubScreen(),
       const ProtectScreen(),
       const SosScreen(),
@@ -132,6 +136,113 @@ class AppShell extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Home-only protection status built from user-confirmed safety actions.
+class _HomeWithProtection extends StatelessWidget {
+  final ProtectionState protection;
+  final VoidCallback onImproveProtection;
+  final Widget child;
+
+  const _HomeWithProtection({
+    required this.protection,
+    required this.onImproveProtection,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = protection.percentage >= 80
+        ? Palette.green
+        : protection.percentage >= 50
+            ? Palette.amber
+            : Palette.red;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+          child: GlassCard(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            borderColor: color.withOpacity(.36),
+            child: protection.isLoading
+                ? const Row(
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Palette.cyan,
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Loading your protection status…',
+                        style: TextStyle(color: Palette.dim),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color.withOpacity(.12),
+                          border: Border.all(color: color.withOpacity(.45)),
+                        ),
+                        child: Text(
+                          '${protection.percentage}%',
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'YOUR PROTECTION STATUS',
+                              style: TextStyle(
+                                color: Palette.text,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '${protection.completedCount} of ${protection.totalCount} safety steps confirmed. This score comes only from actions you mark complete.',
+                              style: const TextStyle(
+                                color: Palette.dim,
+                                fontSize: 11.5,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      TextButton.icon(
+                        onPressed: onImproveProtection,
+                        icon: const Icon(Icons.verified_user_outlined, size: 17),
+                        label: const Text('Improve'),
+                        style: TextButton.styleFrom(foregroundColor: color),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+        Expanded(child: child),
+      ],
     );
   }
 }
