@@ -75,4 +75,16 @@ class ScamInvestigation {
     required this.highlights,
     required this.recommendedActions,
   });
+
+  /// Short plain-English description suitable for compact result cards.
+  String get summary {
+    switch (verdict) {
+      case InvestigationVerdict.highRisk:
+        return 'Strong warning signs were found. Likely category: $category.';
+      case InvestigationVerdict.suspicious:
+        return 'Some warning signs were found. Treat this carefully.';
+      case InvestigationVerdict.lowRisk:
+        return 'No strong scam pattern was found, but verify important requests independently.';
+    }
+  }
 }
