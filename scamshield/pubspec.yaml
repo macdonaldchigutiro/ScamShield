@@ -18,6 +18,11 @@ dependencies:
   # clean path to web/mobile routes without scattering Navigator calls around.
   go_router: ^14.8.1
 
+  # Small cross-platform HTTP client used only for optional consented cloud
+  # analysis. No API secret is embedded in the app; production authentication
+  # belongs on the backend.
+  http: ^1.2.2
+
   # Lets users select screenshots from gallery/files on mobile and web.
   # 1.1.2 keeps compatibility with the Dart 3 generation used by this project.
   image_picker: ^1.1.2
