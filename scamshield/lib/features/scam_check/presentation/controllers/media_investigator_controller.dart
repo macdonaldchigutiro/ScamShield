@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../incidents/presentation/controllers/incident_controller.dart';
 import '../../data/services/media_scan_service.dart';
 import '../../domain/entities/media_scan_result.dart';
 import '../../domain/entities/scam_investigation.dart';
@@ -15,6 +16,7 @@ final mediaInvestigatorControllerProvider = StateNotifierProvider<
   return MediaInvestigatorController(
     ref.watch(mediaScanServiceProvider),
     ref.watch(investigateScamProvider),
+    ref.read(incidentControllerProvider.notifier),
   );
 });
 
@@ -41,9 +43,13 @@ class MediaInvestigatorState {
 class MediaInvestigatorController extends StateNotifier<MediaInvestigatorState> {
   final MediaScanService _mediaScanService;
   final InvestigateScam _investigateScam;
+  final IncidentController _incidentController;
 
-  MediaInvestigatorController(this._mediaScanService, this._investigateScam)
-      : super(const MediaInvestigatorState());
+  MediaInvestigatorController(
+    this._mediaScanService,
+    this._investigateScam,
+    this._incidentController,
+  ) : super(const MediaInvestigatorState());
 
   Future<void> chooseImage() async {
     state = const MediaInvestigatorState(isScanningImage: true);
@@ -88,6 +94,15 @@ class MediaInvestigatorController extends StateNotifier<MediaInvestigatorState> 
         channel: InvestigationChannel.other,
         sender: preferQr ? 'QR code' : 'Screenshot',
       );
+
+      if (result.verdict != InvestigationVerdict.lowRisk) {
+        await _incidentController.saveInvestigation(
+          investigation: result,
+          content: cleaned,
+          sourceLabel: preferQr ? 'QR code' : 'Screenshot',
+          sender: preferQr ? 'QR code' : 'Screenshot',
+        );
+      }
 
       state = MediaInvestigatorState(
         media: state.media,
