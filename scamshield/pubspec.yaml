@@ -44,6 +44,10 @@ dependencies:
   # are intentionally not stored in preferences.
   shared_preferences: ^2.5.3
 
+  # SHA-256 fingerprints give exported evidence a stable integrity identifier.
+  # 3.0.7 supports Dart 3.4+, including this project's Dart 3.6.x SDK.
+  crypto: ^3.0.7
+
   # Generates professional multi-page incident reports entirely on-device.
   # 3.11.3 is compatible with this Flutter SDK's pinned vector_math 2.1.4,
   # while newer pdf releases require vector_math 2.2.0.
