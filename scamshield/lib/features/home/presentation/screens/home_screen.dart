@@ -3,22 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../check_screen.dart';
-import '../../../../protect_screen.dart';
-import '../../../../sim.dart';
 import '../../../../sos_screen.dart';
 import '../../../../theme.dart';
 import '../../../incidents/domain/entities/incident_record.dart';
 import '../../../incidents/presentation/controllers/incident_controller.dart';
+import '../../../protection/presentation/controllers/protection_controller.dart';
+import '../../../scam_check/presentation/screens/media_investigator_screen.dart';
 
-/// ScamShield's action-first Home dashboard.
+/// Friendly, action-first Home screen.
 ///
-/// Home deliberately shows only real local ScamShield investigation data.
-/// Prototype simulation data is kept out of the customer-facing activity view
-/// so users never confuse training/demo events with genuine investigations.
+/// The screen deliberately avoids invented threat statistics. Its personal
+/// status and recent activity are derived from persistent protection actions
+/// and real investigations stored in the Evidence Locker.
 class HomeScreen extends ConsumerWidget {
-  final ThreatSim sim;
-
-  const HomeScreen({super.key, required this.sim});
+  const HomeScreen({super.key});
 
   void _open(BuildContext context, Widget page, String title) {
     Navigator.of(context).push(
@@ -26,21 +24,12 @@ class HomeScreen extends ConsumerWidget {
         builder: (_) => Scaffold(
           backgroundColor: Palette.bg,
           appBar: AppBar(
-            backgroundColor: const Color(0xFF070C1C),
+            backgroundColor: Palette.bg,
             foregroundColor: Palette.text,
             elevation: 0,
-            leading: IconButton(
-              tooltip: 'Back',
-              icon: const Icon(Icons.arrow_back_rounded),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
             title: Text(
               title,
-              style: const TextStyle(
-                color: Palette.text,
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
           body: SafeArea(child: page),
@@ -51,827 +40,546 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final incidentState = ref.watch(incidentControllerProvider);
-    final incidents = incidentState.incidents;
-    final recent = incidents.take(4).toList(growable: false);
+    final incidents = ref.watch(incidentControllerProvider);
+    final protection = ref.watch(protectionControllerProvider);
+    final recent = incidents.incidents.take(4).toList(growable: false);
 
-    final highRisk = incidents
-        .where((incident) => incident.verdict.name == 'highRisk')
-        .length;
-    final suspicious = incidents
-        .where((incident) => incident.verdict.name == 'suspicious')
-        .length;
-    final actionNeeded = incidents
-        .where((incident) => incident.status == IncidentStatus.actionRequired)
-        .length;
-    final reported = incidents
-        .where((incident) => incident.status == IncidentStatus.reported)
-        .length;
+    void openCheck() => _open(context, const CheckScreen(), 'Check');
+    void openScreenshot() => _open(
+          context,
+          const MediaInvestigatorScreen(),
+          'Check screenshot or QR',
+        );
 
-    final averageRisk = incidents.isEmpty
-        ? 0
-        : (incidents.fold<int>(0, (sum, item) => sum + item.riskScore) /
-                incidents.length)
-            .round();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 850;
+        final padding = wide ? 28.0 : 16.0;
 
-    final categoryCounts = <String, int>{};
-    for (final incident in incidents) {
-      categoryCounts[incident.category] =
-          (categoryCounts[incident.category] ?? 0) + 1;
-    }
-    final topCategories = categoryCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+        final checkCard = _CheckCard(
+          onMessage: openCheck,
+          onLink: openCheck,
+          onNumber: openCheck,
+          onScreenshot: openScreenshot,
+        );
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-      children: [
-        _HeroCard(
-          onCheck: () => _open(context, const CheckScreen(), 'Check'),
-        ),
-        const SizedBox(height: 14),
-        const Text(
-          'QUICK ACTIONS',
-          style: TextStyle(
-            color: Palette.cyan,
-            letterSpacing: 2,
-            fontSize: 11,
-          ),
-        ),
-        const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, box) {
-            final wide = box.maxWidth > 760;
-            final actions = [
-              _QuickAction(
-                icon: Icons.chat_bubble_outline_rounded,
-                title: 'Check a message',
-                subtitle: 'SMS, WhatsApp, email or social message',
-                color: Palette.cyan,
-                onTap: () => _open(
-                  context,
-                  const CheckScreen(),
-                  'Check a message',
-                ),
-              ),
-              _QuickAction(
-                icon: Icons.link_rounded,
-                title: 'Check a suspicious link',
-                subtitle: 'Inspect domains and common scam tricks',
-                color: Palette.violet,
-                onTap: () => _open(context, const CheckScreen(), 'Check a link'),
-              ),
-              _QuickAction(
-                icon: Icons.health_and_safety_outlined,
-                title: 'Improve my protection',
-                subtitle: 'Harden WhatsApp, SIM, email and money accounts',
-                color: Palette.green,
-                onTap: () => _open(
-                  context,
-                  const ProtectScreen(),
-                  'Protection',
-                ),
-              ),
-              _QuickAction(
-                icon: Icons.emergency_outlined,
-                title: 'I think I have been scammed',
-                subtitle: 'Get immediate recovery steps and damage control',
-                color: Palette.red,
-                onTap: () => _open(context, const SosScreen(), 'Get help'),
-              ),
-            ];
-
-            if (!wide) {
-              return Column(
-                children: [
-                  for (var index = 0; index < actions.length; index++) ...[
-                    actions[index],
-                    if (index != actions.length - 1)
-                      const SizedBox(height: 8),
-                  ],
-                ],
-              );
-            }
-
-            return Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: actions[0]),
-                    const SizedBox(width: 8),
-                    Expanded(child: actions[1]),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: actions[2]),
-                    const SizedBox(width: 8),
-                    Expanded(child: actions[3]),
-                  ],
-                ),
-              ],
-            );
+        final protectionCard = _ProtectionCard(
+          state: protection,
+          onOpenProtect: () {
+            // The shell owns the primary Protect tab. This event lets Home ask
+            // the shell to switch without duplicating another navigation stack.
+            ref.read(selectedHomeTabProvider.notifier).state = 2;
           },
-        ),
-        const SizedBox(height: 14),
-        _InvestigationPulse(
-          isLoading: incidentState.isLoading,
-          total: incidents.length,
-          highRisk: highRisk,
-          suspicious: suspicious,
-          actionNeeded: actionNeeded,
-          reported: reported,
-          averageRisk: averageRisk,
-          topCategories: topCategories.take(3).toList(growable: false),
-          onOpenEvidence: () => context.push('/evidence'),
-          onRunCheck: () => _open(
-            context,
-            const CheckScreen(),
-            'Check something suspicious',
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'RECENT INVESTIGATIONS',
-                style: TextStyle(
-                  color: Palette.cyan,
-                  letterSpacing: 2,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () => context.push('/evidence'),
-              icon: const Icon(
-                Icons.inventory_2_outlined,
-                color: Palette.cyan,
-                size: 17,
-              ),
-              label: const Text(
-                'Evidence Locker',
-                style: TextStyle(color: Palette.cyan, fontSize: 11),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        if (incidentState.isLoading)
-          const GlassCard(
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Palette.cyan,
-                  ),
-                ),
-                SizedBox(width: 10),
-                Text(
-                  'Loading your investigations…',
-                  style: TextStyle(color: Palette.dim),
-                ),
-              ],
-            ),
-          )
-        else if (recent.isEmpty)
-          GlassCard(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.history_rounded, color: Palette.dim),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'No saved investigations yet',
-                        style: TextStyle(
-                          color: Palette.text,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Suspicious and high-risk checks will appear here automatically after ScamShield saves them to your Evidence Locker.',
-                        style: TextStyle(
-                          color: Palette.dim,
-                          fontSize: 11.5,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 9),
-                      TextButton(
-                        onPressed: () => _open(
-                          context,
-                          const CheckScreen(),
-                          'Check something suspicious',
-                        ),
-                        child: const Text(
-                          'Run a check',
-                          style: TextStyle(color: Palette.cyan),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          for (final incident in recent)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _RecentInvestigationCard(
-                incident: incident,
-                onTap: () => context.push('/evidence'),
-              ),
-            ),
-      ],
-    );
-  }
-}
+        );
 
-/// Real activity summary based only on investigations stored by ScamShield.
-class _InvestigationPulse extends StatelessWidget {
-  final bool isLoading;
-  final int total;
-  final int highRisk;
-  final int suspicious;
-  final int actionNeeded;
-  final int reported;
-  final int averageRisk;
-  final List<MapEntry<String, int>> topCategories;
-  final VoidCallback onOpenEvidence;
-  final VoidCallback onRunCheck;
-
-  const _InvestigationPulse({
-    required this.isLoading,
-    required this.total,
-    required this.highRisk,
-    required this.suspicious,
-    required this.actionNeeded,
-    required this.reported,
-    required this.averageRisk,
-    required this.topCategories,
-    required this.onOpenEvidence,
-    required this.onRunCheck,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(18),
-      borderColor: Palette.cyan.withOpacity(0.28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'INVESTIGATION PULSE',
-                      style: TextStyle(
-                        color: Palette.cyan,
-                        letterSpacing: 2,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Text(
-                      'Real ScamShield activity saved on this device',
-                      style: TextStyle(color: Palette.dim, fontSize: 10),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Palette.green.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Palette.green.withOpacity(0.55)),
-                ),
-                child: const Text(
-                  'ACTUAL DATA',
-                  style: TextStyle(
-                    color: Palette.green,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(color: Palette.cyan),
-              ),
-            )
-          else if (total == 0)
-            _EmptyPulse(onRunCheck: onRunCheck)
-          else ...[
-            LayoutBuilder(
-              builder: (context, box) {
-                final wide = box.maxWidth > 760;
-                final metrics = Row(
-                  children: [
-                    _Metric(
-                      value: '$total',
-                      label: 'SAVED',
-                      color: Palette.cyan,
-                    ),
-                    const SizedBox(width: 8),
-                    _Metric(
-                      value: '$highRisk',
-                      label: 'HIGH RISK',
-                      color: Palette.red,
-                    ),
-                    const SizedBox(width: 8),
-                    _Metric(
-                      value: '$actionNeeded',
-                      label: 'ACTION NEEDED',
-                      color: Palette.amber,
-                    ),
-                  ],
-                );
-
-                final insight = Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.025),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Palette.glassBorder),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'WHAT YOUR INVESTIGATIONS SHOW',
-                        style: TextStyle(
-                          color: Palette.text,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _InsightLine(
-                        label: 'Average saved risk',
-                        value: '$averageRisk / 100',
-                        color: averageRisk >= 60
-                            ? Palette.red
-                            : averageRisk >= 25
-                                ? Palette.amber
-                                : Palette.green,
-                      ),
-                      _InsightLine(
-                        label: 'Suspicious investigations',
-                        value: '$suspicious',
-                        color: Palette.amber,
-                      ),
-                      _InsightLine(
-                        label: 'Marked reported',
-                        value: '$reported',
-                        color: Palette.violet,
-                      ),
-                      if (topCategories.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        const Text(
-                          'MOST COMMON CATEGORIES',
-                          style: TextStyle(
-                            color: Palette.dim,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        for (final entry in topCategories)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 5),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.circle,
-                                  size: 6,
-                                  color: Palette.cyan,
-                                ),
-                                const SizedBox(width: 7),
-                                Expanded(
-                                  child: Text(
-                                    entry.key,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Palette.text,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  '${entry.value}',
-                                  style: const TextStyle(
-                                    color: Palette.cyan,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
-                );
-
-                if (wide) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: metrics),
-                      const SizedBox(width: 14),
-                      Expanded(child: insight),
-                    ],
-                  );
-                }
-
-                return Column(
-                  children: [
-                    metrics,
-                    const SizedBox(height: 12),
-                    insight,
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: onOpenEvidence,
-                icon: const Icon(
-                  Icons.inventory_2_outlined,
-                  color: Palette.cyan,
-                  size: 17,
-                ),
-                label: const Text(
-                  'Open Evidence Locker',
-                  style: TextStyle(color: Palette.cyan),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyPulse extends StatelessWidget {
-  final VoidCallback onRunCheck;
-
-  const _EmptyPulse({required this.onRunCheck});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Palette.cyan.withOpacity(0.035),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Palette.glassBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.insights_outlined, color: Palette.cyan),
-              SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  'No investigation activity yet',
-                  style: TextStyle(
-                    color: Palette.text,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'This panel will build from actual suspicious and high-risk checks saved by ScamShield. No simulated activity is shown here.',
-            style: TextStyle(color: Palette.dim, fontSize: 11.5, height: 1.4),
-          ),
-          const SizedBox(height: 9),
-          TextButton(
-            onPressed: onRunCheck,
-            child: const Text(
-              'Run a check',
-              style: TextStyle(color: Palette.cyan),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InsightLine extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-
-  const _InsightLine({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(color: Palette.dim, fontSize: 11),
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroCard extends StatelessWidget {
-  final VoidCallback onCheck;
-
-  const _HeroCard({required this.onCheck});
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(20),
-      borderColor: Palette.cyan.withOpacity(0.26),
-      tint: const Color(0x1600E5FF),
-      child: LayoutBuilder(
-        builder: (context, box) {
-          final wide = box.maxWidth > 850;
-          final intro = Column(
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(padding, 12, padding, 28),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
+              if (wide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 3, child: checkCard),
+                    const SizedBox(width: 22),
+                    Expanded(flex: 2, child: protectionCard),
+                  ],
+                )
+              else ...[
+                checkCard,
+                const SizedBox(height: 18),
+                protectionCard,
+              ],
+              const SizedBox(height: 22),
+              _PrivacyCard(),
+              const SizedBox(height: 22),
+              _RecentHeader(onEvidence: () => context.push('/evidence')),
+              const SizedBox(height: 8),
+              if (incidents.isLoading)
+                const _LoadingCard()
+              else if (recent.isEmpty)
+                _EmptyRecent(onStart: openCheck)
+              else
+                for (final incident in recent)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _RecentInvestigationCard(
+                      incident: incident,
+                      onTap: () => context.push('/evidence'),
+                    ),
+                  ),
+              const SizedBox(height: 14),
+              _EmergencyCard(
+                onTap: () => _open(
+                  context,
+                  const SosScreen(),
+                  'Emergency help',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CheckCard extends StatelessWidget {
+  final VoidCallback onMessage;
+  final VoidCallback onLink;
+  final VoidCallback onNumber;
+  final VoidCallback onScreenshot;
+
+  const _CheckCard({
+    required this.onMessage,
+    required this.onLink,
+    required this.onNumber,
+    required this.onScreenshot,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(24),
+      borderColor: Palette.cyan.withOpacity(.45),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Got a message that feels off?',
+            style: TextStyle(
+              color: Palette.text,
+              fontSize: 30,
+              height: 1.12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -.4,
+            ),
+          ),
+          const SizedBox(height: 9),
+          const Text(
+            'Check it before you click, reply, pay or share a code.',
+            style: TextStyle(
+              color: Palette.dim,
+              fontSize: 16,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Material(
+            color: Palette.surfaceHi,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              onTap: onMessage,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 66),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                 decoration: BoxDecoration(
-                  color: Palette.green.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Palette.green.withOpacity(0.32)),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Palette.line),
                 ),
                 child: const Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.shield_rounded,
-                        color: Palette.green, size: 14),
-                    SizedBox(width: 6),
-                    Text(
-                      'SCAMSHIELD ACTIVE',
-                      style: TextStyle(
-                        color: Palette.green,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.4,
+                    Icon(Icons.content_paste_go_rounded, color: Palette.cyan),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Paste a message, link or number',
+                        style: TextStyle(color: Palette.dim, fontSize: 17),
                       ),
                     ),
+                    Icon(Icons.arrow_forward_rounded, color: Palette.cyan),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Something feels wrong?',
-                style: TextStyle(
-                  color: Palette.text,
-                  fontSize: 28,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Or check something else',
+            style: TextStyle(
+              color: Palette.dim,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 9,
+            runSpacing: 9,
+            children: [
+              _CheckChip(
+                icon: Icons.chat_bubble_outline_rounded,
+                label: 'Message',
+                onTap: onMessage,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Check it before you click, reply, pay or share a code.',
-                style:
-                    TextStyle(color: Palette.dim, fontSize: 14, height: 1.45),
+              _CheckChip(
+                icon: Icons.link_rounded,
+                label: 'Link',
+                onTap: onLink,
               ),
-              const SizedBox(height: 18),
-              GlowButton(
-                label: 'CHECK SOMETHING SUSPICIOUS',
-                icon: Icons.manage_search_rounded,
-                onTap: onCheck,
+              _CheckChip(
+                icon: Icons.phone_outlined,
+                label: 'Phone number',
+                onTap: onNumber,
+              ),
+              _CheckChip(
+                icon: Icons.image_outlined,
+                label: 'Screenshot',
+                onTap: onScreenshot,
               ),
             ],
-          );
-
-          final privacy = Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: Palette.violet.withOpacity(0.08),
-              border: Border.all(color: Palette.violet.withOpacity(0.26)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.lock_person_outlined,
-                    color: Palette.green, size: 42),
-                SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Private by design',
-                        style: TextStyle(
-                          color: Palette.text,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        'Your local investigations stay available in the Evidence Locker on this device.',
-                        style: TextStyle(
-                          color: Palette.dim,
-                          fontSize: 11,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-
-          if (wide) {
-            return Row(
-              children: [
-                Expanded(flex: 6, child: intro),
-                const SizedBox(width: 24),
-                Expanded(flex: 4, child: privacy),
-              ],
-            );
-          }
-
-          return Column(
-            children: [intro, const SizedBox(height: 18), privacy],
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 }
 
-class _QuickAction extends StatelessWidget {
+class _CheckChip extends StatelessWidget {
   final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
+  final String label;
   final VoidCallback onTap;
 
-  const _QuickAction({
+  const _CheckChip({
     required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
+    required this.label,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          color: color.withOpacity(0.08),
-          border: Border.all(color: color.withOpacity(0.28)),
+    return ActionChip(
+      onPressed: onTap,
+      avatar: Icon(icon, size: 19, color: Palette.text),
+      label: Text(
+        label,
+        style: const TextStyle(
+          color: Palette.text,
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                color: color.withOpacity(0.14),
-              ),
-              child: Icon(icon, color: color),
+      ),
+      backgroundColor: Palette.surfaceHi,
+      side: const BorderSide(color: Palette.line),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+    );
+  }
+}
+
+class _ProtectionCard extends StatelessWidget {
+  final ProtectionState state;
+  final VoidCallback onOpenProtect;
+
+  const _ProtectionCard({
+    required this.state,
+    required this.onOpenProtect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = state.progress;
+    final color = state.percentage >= 80
+        ? Palette.green
+        : state.percentage >= 40
+            ? Palette.amber
+            : Palette.cyan;
+    final label = state.percentage >= 80
+        ? 'Strong protection'
+        : state.percentage >= 40
+            ? 'Partly protected'
+            : 'Build your protection';
+
+    return GlassCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'YOUR PROTECTION',
+            style: TextStyle(
+              color: Palette.dim,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.4,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Palette.text,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
+          ),
+          const SizedBox(height: 14),
+          if (state.isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(26),
+                child: CircularProgressIndicator(color: Palette.cyan),
+              ),
+            )
+          else ...[
+            Row(
+              children: [
+                SizedBox(
+                  width: 88,
+                  height: 88,
+                  child: CustomPaint(
+                    painter: RingPainter(progress, color, thickness: 9),
+                    child: Center(
+                      child: Text(
+                        '${state.completedCount}/${state.totalCount}',
+                        style: const TextStyle(
+                          color: Palette.text,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: Palette.dim,
-                      fontSize: 11,
-                      height: 1.3,
-                    ),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${state.percentage}% based only on safety steps you have confirmed.',
+                        style: const TextStyle(
+                          color: Palette.dim,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: 7,
+              color: color,
+              backgroundColor: Palette.line,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onOpenProtect,
+                icon: const Icon(Icons.verified_user_outlined),
+                label: const Text('Improve my protection'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Palette.text,
+                  side: const BorderSide(color: Palette.line),
+                  minimumSize: const Size(48, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
-            Icon(Icons.arrow_forward_rounded, color: color, size: 18),
           ],
-        ),
+        ],
       ),
     );
   }
 }
 
-class _Metric extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
+class _PrivacyCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lock_person_outlined, color: Palette.green, size: 28),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Private by design',
+                  style: TextStyle(
+                    color: Palette.text,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Your saved investigations and protection progress are stored locally on this device. ScamShield does not claim a message was uploaded unless a feature explicitly says it sends data elsewhere.',
+                  style: TextStyle(
+                    color: Palette.dim,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-  const _Metric({
-    required this.value,
-    required this.label,
-    required this.color,
-  });
+class _RecentHeader extends StatelessWidget {
+  final VoidCallback onEvidence;
+
+  const _RecentHeader({required this.onEvidence});
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Colors.white.withOpacity(0.025),
-          border: Border.all(color: Palette.glassBorder),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-              ),
+    return Row(
+      children: [
+        const Expanded(
+          child: Text(
+            'Your recent investigations',
+            style: TextStyle(
+              color: Palette.text,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
             ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Palette.dim,
-                fontSize: 8.5,
-                letterSpacing: 1.0,
-              ),
-            ),
-          ],
+          ),
         ),
+        TextButton.icon(
+          onPressed: onEvidence,
+          icon: const Icon(Icons.inventory_2_outlined, size: 19),
+          label: const Text('Evidence Locker'),
+          style: TextButton.styleFrom(foregroundColor: Palette.cyan),
+        ),
+      ],
+    );
+  }
+}
+
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const GlassCard(
+      child: Row(
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 12),
+          Text('Loading your investigations…'),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyRecent extends StatelessWidget {
+  final VoidCallback onStart;
+
+  const _EmptyRecent({required this.onStart});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Nothing saved yet',
+            style: TextStyle(
+              color: Palette.text,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Suspicious and high-risk checks are saved on this device so you can review them later or export a report.',
+            style: TextStyle(
+              color: Palette.dim,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton(
+            onPressed: onStart,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Palette.text,
+              side: const BorderSide(color: Palette.line),
+              minimumSize: const Size(48, 48),
+            ),
+            child: const Text('Check your first message'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmergencyCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _EmergencyCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Palette.red.withOpacity(.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Palette.red.withOpacity(.45)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.emergency_rounded, color: Palette.red, size: 28),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Already sent money, shared a code or lost an account?',
+                  style: TextStyle(
+                    color: Palette.text,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'Open the emergency recovery guide for step-by-step help.',
+                  style: TextStyle(color: Palette.dim, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          FilledButton(
+            onPressed: onTap,
+            style: FilledButton.styleFrom(
+              backgroundColor: Palette.red,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(48, 48),
+            ),
+            child: const Text(
+              "I've been scammed",
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -888,127 +596,127 @@ class _RecentInvestigationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _verdictColor(incident.verdict.name);
+    final color = _verdictColor(incident.verdict);
     final created = incident.createdAt.toLocal();
     final when =
         '${created.day.toString().padLeft(2, '0')}/${created.month.toString().padLeft(2, '0')} '
         '${created.hour.toString().padLeft(2, '0')}:${created.minute.toString().padLeft(2, '0')}';
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: GlassCard(
-        padding: const EdgeInsets.all(12),
-        borderColor: color.withOpacity(0.32),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(13),
-                color: color.withOpacity(0.12),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: GlassCard(
+          padding: const EdgeInsets.all(14),
+          borderColor: color.withOpacity(.28),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: color.withOpacity(.12),
+                ),
+                child: Icon(_verdictIcon(incident.verdict), color: color),
               ),
-              child: Icon(_verdictIcon(incident.verdict.name), color: color),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          incident.category,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Palette.text,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12.5,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            incident.category,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Palette.text,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        when,
-                        style:
-                            const TextStyle(color: Palette.dim, fontSize: 9.5),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    incident.content.isEmpty
-                        ? incident.sourceLabel
-                        : incident.content,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Palette.dim,
-                      fontSize: 11,
-                      height: 1.3,
+                        Text(
+                          when,
+                          style: const TextStyle(
+                            color: Palette.dim,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
+                    Text(
+                      incident.content.isEmpty
+                          ? incident.sourceLabel
+                          : incident.content,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Palette.dim,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      incident.sourceLabel,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                children: [
                   Text(
-                    incident.sourceLabel,
+                    '${incident.riskScore}',
                     style: TextStyle(
-                      color: color.withOpacity(0.9),
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
+                      color: color,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
                     ),
+                  ),
+                  const Text(
+                    'RISK',
+                    style: TextStyle(color: Palette.dim, fontSize: 9),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${incident.riskScore}',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 19,
-                  ),
-                ),
-                const Text(
-                  'RISK',
-                  style: TextStyle(
-                    color: Palette.dim,
-                    fontSize: 8,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-Color _verdictColor(String verdictName) {
-  switch (verdictName) {
-    case 'highRisk':
+Color _verdictColor(InvestigationVerdict verdict) {
+  switch (verdict) {
+    case InvestigationVerdict.highRisk:
       return Palette.red;
-    case 'suspicious':
+    case InvestigationVerdict.suspicious:
       return Palette.amber;
-    default:
+    case InvestigationVerdict.lowRisk:
       return Palette.green;
   }
 }
 
-IconData _verdictIcon(String verdictName) {
-  switch (verdictName) {
-    case 'highRisk':
+IconData _verdictIcon(InvestigationVerdict verdict) {
+  switch (verdict) {
+    case InvestigationVerdict.highRisk:
       return Icons.gpp_bad_rounded;
-    case 'suspicious':
+    case InvestigationVerdict.suspicious:
       return Icons.warning_amber_rounded;
-    default:
+    case InvestigationVerdict.lowRisk:
       return Icons.verified_user_rounded;
   }
 }
