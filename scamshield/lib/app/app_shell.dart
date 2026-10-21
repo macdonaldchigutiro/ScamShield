@@ -128,6 +128,14 @@ class _AppHeader extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: 'Evidence Locker',
+            onPressed: () => context.push('/evidence'),
+            icon: const Icon(
+              Icons.inventory_2_outlined,
+              color: Palette.cyan,
+            ),
+          ),
+          IconButton(
             tooltip: 'Partner intelligence',
             // go_router keeps route changes declarative and deep-link ready.
             onPressed: () => context.push('/partner'),
@@ -217,6 +225,11 @@ void _showAboutSheet(BuildContext context) {
             Icons.hub_outlined,
             'All major channels',
             'SMS, WhatsApp, social media, email, phone calls, links, screenshots, QR codes and SIM-swap warning signs.',
+          ),
+          point(
+            Icons.inventory_2_outlined,
+            'Evidence Locker',
+            'Suspicious and high-risk investigations are preserved as structured incidents for recovery and reporting.',
           ),
           point(
             Icons.lock_outline,
