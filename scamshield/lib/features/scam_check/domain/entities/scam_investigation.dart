@@ -43,6 +43,31 @@ class InvestigationLink {
   });
 }
 
+/// Normalised phone-number intelligence found during an investigation.
+///
+/// `warnings` describes only facts ScamShield can infer locally. We do not
+/// claim that a number has been reported unless a real reputation source has
+/// supplied that data.
+class InvestigationPhoneNumber {
+  final String raw;
+  final String normalized;
+  final String countryHint;
+  final String typeHint;
+  final List<String> warnings;
+  final double risk;
+  final bool reputationAvailable;
+
+  const InvestigationPhoneNumber({
+    required this.raw,
+    required this.normalized,
+    required this.countryHint,
+    required this.typeHint,
+    required this.warnings,
+    required this.risk,
+    this.reputationAvailable = false,
+  });
+}
+
 class InvestigationHighlight {
   final int start;
   final int end;
@@ -62,6 +87,7 @@ class ScamInvestigation {
   final InvestigationChannel channel;
   final List<InvestigationReason> reasons;
   final List<InvestigationLink> links;
+  final List<InvestigationPhoneNumber> phoneNumbers;
   final List<InvestigationHighlight> highlights;
   final List<String> recommendedActions;
 
@@ -72,6 +98,7 @@ class ScamInvestigation {
     required this.channel,
     required this.reasons,
     required this.links,
+    this.phoneNumbers = const [],
     required this.highlights,
     required this.recommendedActions,
   });
