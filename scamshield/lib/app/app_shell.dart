@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/providers/app_providers.dart';
-import '../features/scam_check/presentation/screens/scam_investigator_screen_v2.dart';
+import '../features/scam_check/presentation/screens/investigation_hub_screen.dart';
 import '../learn_screen.dart';
 import '../protect_screen.dart';
 import '../radar_screen.dart';
@@ -39,7 +39,7 @@ class AppShell extends ConsumerWidget {
                     index: selectedTab,
                     children: [
                       RadarScreen(sim: sim),
-                      const ScamInvestigatorScreen(),
+                      const InvestigationHubScreen(),
                       const ProtectScreen(),
                       const SosScreen(),
                       const LearnScreen(),
@@ -216,7 +216,7 @@ void _showAboutSheet(BuildContext context) {
           point(
             Icons.hub_outlined,
             'All major channels',
-            'SMS, WhatsApp, social media, email, phone calls, links, QR codes and SIM-swap warning signs.',
+            'SMS, WhatsApp, social media, email, phone calls, links, screenshots, QR codes and SIM-swap warning signs.',
           ),
           point(
             Icons.lock_outline,
