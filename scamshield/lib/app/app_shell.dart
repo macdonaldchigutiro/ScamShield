@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/providers/app_providers.dart';
+import '../features/home/presentation/screens/home_screen.dart';
 import '../features/incidents/presentation/screens/evidence_locker_screen.dart';
 import '../features/scam_check/presentation/screens/investigation_hub_screen.dart';
 import '../learn_screen.dart';
 import '../partner_screen.dart';
 import '../protect_screen.dart';
-import '../radar_screen.dart';
 import '../sos_screen.dart';
 import '../theme.dart';
 
@@ -55,13 +55,13 @@ class AppShell extends ConsumerWidget {
               Expanded(
                 child: AnimatedBuilder(
                   // ThreatSim is currently a ChangeNotifier. AnimatedBuilder
-                  // keeps the existing live prototype behaviour while its
-                  // future replacement can be introduced behind the provider.
+                  // keeps the existing prototype radar animation alive while
+                  // Home's recent investigations come from real local records.
                   animation: sim,
                   builder: (context, _) => IndexedStack(
                     index: selectedTab,
                     children: [
-                      RadarScreen(sim: sim),
+                      HomeScreen(sim: sim),
                       const InvestigationHubScreen(),
                       const ProtectScreen(),
                       const SosScreen(),
