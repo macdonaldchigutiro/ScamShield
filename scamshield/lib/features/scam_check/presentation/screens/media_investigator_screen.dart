@@ -377,6 +377,88 @@ class _MediaInvestigationResult extends StatelessWidget {
               ),
             ],
           ),
+          if (result.phoneNumbers.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'PHONE INTELLIGENCE',
+              style: TextStyle(
+                color: Palette.cyan,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.6,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final phone in result.phoneNumbers)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: Palette.cyan.withOpacity(0.05),
+                    border: Border.all(color: Palette.cyan.withOpacity(0.22)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.phone_outlined,
+                              color: Palette.cyan, size: 18),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: SelectableText(
+                              phone.normalized,
+                              style: const TextStyle(
+                                color: Palette.text,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        '${phone.countryHint} • ${phone.typeHint}',
+                        style: const TextStyle(
+                          color: Palette.dim,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        phone.reputationAvailable
+                            ? 'Live reputation data available.'
+                            : 'Live reputation is not connected yet. Caller ID can be spoofed, so verify the caller independently.',
+                        style: const TextStyle(
+                          color: Palette.amber,
+                          fontSize: 11,
+                          height: 1.35,
+                        ),
+                      ),
+                      if (phone.warnings.isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        for (final warning in phone.warnings)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              '• $warning',
+                              style: const TextStyle(
+                                color: Palette.dim,
+                                fontSize: 11,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+          ],
           if (result.reasons.isNotEmpty) ...[
             const SizedBox(height: 16),
             const Text(
