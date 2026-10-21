@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../incidents/presentation/controllers/incident_controller.dart';
 import '../../data/repositories/rule_based_scam_investigation_repository.dart';
 import '../../domain/entities/scam_investigation.dart';
 import '../../domain/repositories/scam_investigation_repository.dart';
@@ -16,7 +17,10 @@ final investigateScamProvider = Provider<InvestigateScam>((ref) {
 
 final scamInvestigatorControllerProvider = StateNotifierProvider<
     ScamInvestigatorController, ScamInvestigatorState>((ref) {
-  return ScamInvestigatorController(ref.watch(investigateScamProvider));
+  return ScamInvestigatorController(
+    ref.watch(investigateScamProvider),
+    ref.read(incidentControllerProvider.notifier),
+  );
 });
 
 class ScamInvestigatorState {
@@ -47,13 +51,17 @@ class ScamInvestigatorState {
 
 /// Coordinates one investigation request for the presentation layer.
 ///
-/// The controller knows about the use case, but not about widgets. That keeps
-/// loading/error/result behaviour testable and reusable by future entry points.
+/// The controller knows about use cases, not widgets. Concerning investigations
+/// are also preserved in the Evidence Locker so users do not lose important
+/// context after leaving the Check screen.
 class ScamInvestigatorController extends StateNotifier<ScamInvestigatorState> {
   final InvestigateScam _investigateScam;
+  final IncidentController _incidentController;
 
-  ScamInvestigatorController(this._investigateScam)
-      : super(const ScamInvestigatorState());
+  ScamInvestigatorController(
+    this._investigateScam,
+    this._incidentController,
+  ) : super(const ScamInvestigatorState());
 
   Future<void> investigate({
     required String content,
@@ -74,6 +82,18 @@ class ScamInvestigatorController extends StateNotifier<ScamInvestigatorState> {
         channel: channel,
         sender: sender,
       );
+
+      // Low-risk checks are intentionally not stored. Suspicious/high-risk
+      // results are preserved automatically so evidence is not lost by mistake.
+      if (result.verdict != InvestigationVerdict.lowRisk) {
+        await _incidentController.saveInvestigation(
+          investigation: result,
+          content: content,
+          sourceLabel: _sourceLabel(inputType, channel),
+          sender: sender,
+        );
+      }
+
       state = state.copyWith(isLoading: false, result: result);
     } catch (error) {
       state = state.copyWith(
@@ -85,5 +105,36 @@ class ScamInvestigatorController extends StateNotifier<ScamInvestigatorState> {
 
   void clear() {
     state = const ScamInvestigatorState();
+  }
+
+  String _sourceLabel(
+    InvestigationInputType inputType,
+    InvestigationChannel channel,
+  ) {
+    switch (inputType) {
+      case InvestigationInputType.link:
+        return 'Suspicious link';
+      case InvestigationInputType.phoneNumber:
+        return 'Phone / caller details';
+      case InvestigationInputType.message:
+        return _channelLabel(channel);
+    }
+  }
+
+  String _channelLabel(InvestigationChannel channel) {
+    switch (channel) {
+      case InvestigationChannel.sms:
+        return 'SMS message';
+      case InvestigationChannel.whatsapp:
+        return 'WhatsApp message';
+      case InvestigationChannel.facebook:
+        return 'Facebook message';
+      case InvestigationChannel.email:
+        return 'Email';
+      case InvestigationChannel.phoneCall:
+        return 'Phone call';
+      case InvestigationChannel.other:
+        return 'Message';
+    }
   }
 }
