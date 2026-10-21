@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../check_screen.dart';
+import '../../../../core/providers/app_providers.dart';
 import '../../../../sos_screen.dart';
 import '../../../../theme.dart';
 import '../../../incidents/domain/entities/incident_record.dart';
@@ -66,8 +67,6 @@ class HomeScreen extends ConsumerWidget {
         final protectionCard = _ProtectionCard(
           state: protection,
           onOpenProtect: () {
-            // The shell owns the primary Protect tab. This event lets Home ask
-            // the shell to switch without duplicating another navigation stack.
             ref.read(selectedHomeTabProvider.notifier).state = 2;
           },
         );
