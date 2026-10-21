@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/app_providers.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/incidents/presentation/screens/evidence_locker_screen.dart';
+import '../features/privacy/presentation/screens/privacy_screen.dart';
 import '../features/protection/presentation/controllers/protection_controller.dart';
 import '../features/scam_check/presentation/screens/investigation_hub_screen.dart';
 import '../learn_screen.dart';
@@ -42,6 +43,12 @@ class AppShell extends ConsumerWidget {
       );
     }
 
+    void openPrivacy() {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PrivacyScreen()),
+      );
+    }
+
     final pages = <Widget>[
       const HomeScreen(),
       const InvestigationHubScreen(),
@@ -64,6 +71,7 @@ class AppShell extends ConsumerWidget {
                   onProtectionPressed: () => selectTab(2),
                   onEvidencePressed: openEvidence,
                   onPartnerPressed: openPartner,
+                  onPrivacyPressed: openPrivacy,
                   onEmergencyPressed: () => selectTab(3),
                   onHelpPressed: () => selectTab(3),
                 ),
@@ -192,6 +200,7 @@ class _AppHeader extends StatelessWidget {
   final VoidCallback onProtectionPressed;
   final VoidCallback onEvidencePressed;
   final VoidCallback onPartnerPressed;
+  final VoidCallback onPrivacyPressed;
   final VoidCallback onEmergencyPressed;
   final VoidCallback onHelpPressed;
 
@@ -201,6 +210,7 @@ class _AppHeader extends StatelessWidget {
     required this.onProtectionPressed,
     required this.onEvidencePressed,
     required this.onPartnerPressed,
+    required this.onPrivacyPressed,
     required this.onEmergencyPressed,
     required this.onHelpPressed,
   });
@@ -258,6 +268,12 @@ class _AppHeader extends StatelessWidget {
               onPressed: onPartnerPressed,
             ),
             _HeaderAction(
+              icon: Icons.privacy_tip_outlined,
+              label: 'Privacy',
+              color: Palette.green,
+              onPressed: onPrivacyPressed,
+            ),
+            _HeaderAction(
               icon: Icons.emergency_rounded,
               label: "I've been scammed",
               color: Palette.red,
@@ -271,6 +287,12 @@ class _AppHeader extends StatelessWidget {
               icon: const Icon(Icons.help_outline),
             ),
           ] else ...[
+            IconButton(
+              tooltip: 'Privacy & analysis',
+              onPressed: onPrivacyPressed,
+              color: Palette.green,
+              icon: const Icon(Icons.privacy_tip_outlined),
+            ),
             IconButton(
               tooltip: 'Evidence Locker',
               onPressed: onEvidencePressed,
