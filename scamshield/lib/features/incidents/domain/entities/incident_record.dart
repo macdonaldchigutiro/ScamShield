@@ -1,4 +1,6 @@
 import '../../../scam_check/domain/entities/scam_investigation.dart';
+export '../../../scam_check/domain/entities/scam_investigation.dart'
+    show InvestigationVerdict;
 
 /// Lifecycle state for an incident in the Evidence Locker.
 enum IncidentStatus { reviewing, actionRequired, reported, resolved }
