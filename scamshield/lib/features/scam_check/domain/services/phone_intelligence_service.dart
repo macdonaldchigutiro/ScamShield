@@ -49,11 +49,8 @@ class PhoneIntelligenceService {
     final countryHint = _countryHint(normalized);
     final typeHint = _typeHint(normalized);
 
-    if (!normalized.startsWith('+')) {
-      warnings.add(
-        'No international country code is present, so the country cannot be verified from the number alone.',
-      );
-    }
+    // Missing a country code is metadata, not evidence of fraud. It must never
+    // increase risk or make an ordinary local mobile number look suspicious.
 
     if (_looksLikeUkPremiumOrPersonalNumber(normalized)) {
       warnings.add(
@@ -68,7 +65,7 @@ class PhoneIntelligenceService {
     }
 
     // A number cannot be labelled safe or fraudulent from formatting alone.
-    // Keep baseline risk deliberately low unless a concrete local warning exists.
+    // Keep baseline risk at zero unless there is concrete local evidence.
     risk = risk.clamp(0.0, 0.35);
 
     return InvestigationPhoneNumber(
