@@ -1,6 +1,7 @@
 import '../../../../analyzer.dart' as legacy;
 import '../../domain/entities/scam_investigation.dart';
 import '../../domain/repositories/scam_investigation_repository.dart';
+import '../../domain/services/phone_intelligence_service.dart';
 
 /// Adapter around ScamShield's existing transparent rules engine.
 ///
@@ -10,7 +11,12 @@ import '../../domain/repositories/scam_investigation_repository.dart';
 /// changing the investigator screen.
 class RuleBasedScamInvestigationRepository
     implements ScamInvestigationRepository {
-  const RuleBasedScamInvestigationRepository();
+  final PhoneIntelligenceService _phoneIntelligence;
+
+  const RuleBasedScamInvestigationRepository({
+    PhoneIntelligenceService phoneIntelligence =
+        const PhoneIntelligenceService(),
+  }) : _phoneIntelligence = phoneIntelligence;
 
   @override
   Future<ScamInvestigation> investigate({
@@ -23,6 +29,11 @@ class RuleBasedScamInvestigationRepository
       content,
       sender: sender,
       channel: _toLegacyChannel(channel),
+    );
+
+    final phones = _phoneIntelligence.inspect(
+      content,
+      directNumberCheck: inputType == InvestigationInputType.phoneNumber,
     );
 
     // Start with the transparent legacy-rule score, then add context-aware
@@ -56,6 +67,18 @@ class RuleBasedScamInvestigationRepository
     if (hasSecrecy) adjustedScore += 10;
     if (hasFamilyImpersonation && hasMoneyRequest) adjustedScore += 15;
     if (hasUrgency && hasMoneyRequest) adjustedScore += 8;
+
+    // Number-only checks must not manufacture a scam score. Formatting can
+    // reveal a premium/service range, but a normal-looking mobile number can
+    // still be spoofed or abused. We therefore expose local number intelligence
+    // while keeping the overall verdict cautious until reputation data exists.
+    if (inputType == InvestigationInputType.phoneNumber && phones.isNotEmpty) {
+      final phoneRisk = phones
+          .map((phone) => (phone.risk * 100).round())
+          .fold<int>(0, (highest, value) => value > highest ? value : highest);
+      if (phoneRisk > adjustedScore) adjustedScore = phoneRisk;
+    }
+
     adjustedScore = adjustedScore.clamp(0, 100);
 
     final reasons = <InvestigationReason>[
@@ -98,6 +121,26 @@ class RuleBasedScamInvestigationRepository
       ));
     }
 
+    if (phones.isNotEmpty && inputType != InvestigationInputType.phoneNumber) {
+      reasons.add(InvestigationReason(
+        title: phones.length == 1
+            ? 'Phone number found in the content'
+            : '${phones.length} phone numbers found in the content',
+        explanation:
+            'ScamShield extracted the number${phones.length == 1 ? '' : 's'} so you can inspect the sender/contact details separately from the message wording.',
+        severity: adjustedScore >= 60 ? 0.25 : 0.08,
+      ));
+    }
+
+    if (inputType == InvestigationInputType.phoneNumber) {
+      reasons.add(const InvestigationReason(
+        title: 'Number checked locally',
+        explanation:
+            'ScamShield has normalised the number and checked its format and known high-cost/service ranges. Live community or carrier reputation is not connected yet, so a normal-looking number must not be treated as verified.',
+        severity: 0.08,
+      ));
+    }
+
     reasons.sort((a, b) => b.severity.compareTo(a.severity));
 
     final verdict = adjustedScore >= 60
@@ -106,9 +149,19 @@ class RuleBasedScamInvestigationRepository
             ? InvestigationVerdict.suspicious
             : InvestigationVerdict.lowRisk;
 
-    final category = hasFamilyImpersonation && hasMoneyRequest
-        ? 'Family impersonation'
-        : analysis.type;
+    final category = inputType == InvestigationInputType.phoneNumber
+        ? 'Phone number intelligence'
+        : hasFamilyImpersonation && hasMoneyRequest
+            ? 'Family impersonation'
+            : analysis.type;
+
+    final actions = inputType == InvestigationInputType.phoneNumber
+        ? const [
+            'Do not trust a caller only because the number looks familiar; caller ID can be spoofed.',
+            'If the caller claims to be a bank, company or relative, end the call and contact them using a number you find independently.',
+            'If the number appeared in a suspicious message, scan the full message or screenshot too so ScamShield can assess the context.',
+          ]
+        : analysis.advice;
 
     return ScamInvestigation(
       riskScore: adjustedScore,
@@ -125,6 +178,7 @@ class RuleBasedScamInvestigationRepository
             risk: link.risk,
           ),
       ],
+      phoneNumbers: phones,
       highlights: [
         for (final hit in analysis.hits)
           InvestigationHighlight(
@@ -133,7 +187,7 @@ class RuleBasedScamInvestigationRepository
             severity: hit.weight,
           ),
       ],
-      recommendedActions: analysis.advice,
+      recommendedActions: actions,
     );
   }
 
