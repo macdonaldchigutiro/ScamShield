@@ -18,6 +18,20 @@ dependencies:
   # clean path to web/mobile routes without scattering Navigator calls around.
   go_router: ^14.8.1
 
+  # Lets users select screenshots from gallery/files on mobile and web.
+  # 1.1.2 keeps compatibility with the Dart 3 generation used by this project.
+  image_picker: ^1.1.2
+
+  # Client-side OCR. Screenshot text is extracted locally where the platform
+  # supports Tesseract, rather than uploading private messages to a server.
+  flutter_tesseract_ocr: ^0.4.31
+
+  # Pure-Dart image decoding used before QR analysis.
+  image: ^4.12.0
+
+  # Pure-Dart QR decoder. This keeps QR inspection local and works on web too.
+  zxing2: ^0.2.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
