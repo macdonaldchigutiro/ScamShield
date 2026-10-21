@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
@@ -59,7 +61,7 @@ class MediaScanService {
     );
   }
 
-  String? _tryDecodeQr(List<int> bytes) {
+  String? _tryDecodeQr(Uint8List bytes) {
     try {
       final decodedImage = img.decodeImage(bytes);
       if (decodedImage == null) return null;
