@@ -3,14 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../theme.dart';
+import '../../data/services/incident_pdf_export_service.dart';
 import '../../domain/entities/incident_record.dart';
 import '../../domain/services/incident_report_formatter.dart';
 import '../controllers/incident_controller.dart';
 
 /// Main Evidence Locker view.
 ///
-/// The locker keeps concerning investigations together so users can preserve
-/// evidence, track recovery/reporting status and produce a readable report.
+/// Suspicious and high-risk investigations are preserved here so users can
+/// review evidence, add recovery details and export a portable incident report.
 class EvidenceLockerScreen extends ConsumerWidget {
   const EvidenceLockerScreen({super.key});
 
@@ -194,7 +195,8 @@ class _IncidentCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final color = _verdictColor(incident);
 
-    return GestureDetector(
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
       onTap: () => _showIncidentSheet(context, ref, incident),
       child: GlassCard(
         borderColor: color.withOpacity(0.38),
@@ -257,26 +259,12 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    late final String label;
-    late final Color color;
-    switch (status) {
-      case IncidentStatus.reviewing:
-        label = 'REVIEWING';
-        color = Palette.cyan;
-        break;
-      case IncidentStatus.actionRequired:
-        label = 'ACTION REQUIRED';
-        color = Palette.amber;
-        break;
-      case IncidentStatus.reported:
-        label = 'REPORTED';
-        color = Palette.violet;
-        break;
-      case IncidentStatus.resolved:
-        label = 'RESOLVED';
-        color = Palette.green;
-        break;
-    }
+    final (label, color) = switch (status) {
+      IncidentStatus.reviewing => ('REVIEWING', Palette.cyan),
+      IncidentStatus.actionRequired => ('ACTION REQUIRED', Palette.amber),
+      IncidentStatus.reported => ('REPORTED', Palette.violet),
+      IncidentStatus.resolved => ('RESOLVED', Palette.green),
+    };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -348,6 +336,30 @@ void _showIncidentSheet(
   final referenceController = TextEditingController(
     text: incident.transactionReference ?? '',
   );
+
+  IncidentRecord currentDraft() {
+    // Build a fresh record instead of relying on copyWith so clearing optional
+    // amount/reference fields is represented accurately in exported reports.
+    return IncidentRecord(
+      id: incident.id,
+      createdAt: incident.createdAt,
+      updatedAt: DateTime.now(),
+      sourceLabel: incident.sourceLabel,
+      content: incident.content,
+      sender: incident.sender,
+      riskScore: incident.riskScore,
+      verdict: incident.verdict,
+      category: incident.category,
+      reasons: incident.reasons,
+      recommendedActions: incident.recommendedActions,
+      status: incident.status,
+      notes: notesController.text.trim(),
+      amount: double.tryParse(amountController.text.trim()),
+      transactionReference: referenceController.text.trim().isEmpty
+          ? null
+          : referenceController.text.trim(),
+    );
+  }
 
   showModalBottomSheet<void>(
     context: context,
@@ -478,7 +490,9 @@ void _showIncidentSheet(
                     children: [
                       TextField(
                         controller: amountController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         style: const TextStyle(color: Palette.text),
                         decoration: const InputDecoration(
                           labelText: 'Amount lost / requested (optional)',
@@ -533,11 +547,10 @@ void _showIncidentSheet(
                   label: 'SAVE INCIDENT DETAILS',
                   icon: Icons.save_outlined,
                   onTap: () async {
-                    final amount = double.tryParse(amountController.text.trim());
                     await ref.read(incidentControllerProvider.notifier).updateIncident(
                           id: incident.id,
                           notes: notesController.text.trim(),
-                          amount: amount,
+                          amount: double.tryParse(amountController.text.trim()),
                           transactionReference: referenceController.text.trim(),
                         );
                     if (sheetContext.mounted) {
@@ -551,25 +564,58 @@ void _showIncidentSheet(
                   },
                 ),
                 const SizedBox(height: 9),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      final fileName = await const IncidentPdfExportService()
+                          .export(currentDraft());
+                      if (sheetContext.mounted) {
+                        ScaffoldMessenger.of(sheetContext).showSnackBar(
+                          SnackBar(
+                            behavior: SnackBarBehavior.floating,
+                            content: Text('$fileName downloaded.'),
+                          ),
+                        );
+                      }
+                    } catch (error) {
+                      if (sheetContext.mounted) {
+                        ScaffoldMessenger.of(sheetContext).showSnackBar(
+                          SnackBar(
+                            behavior: SnackBarBehavior.floating,
+                            content: Text('Could not download report: $error'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text('DOWNLOAD PDF REPORT'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Palette.cyan,
+                    foregroundColor: Palette.bg,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 9),
                 OutlinedButton.icon(
                   onPressed: () async {
-                    final report = const IncidentReportFormatter().format(incident.copyWith(
-                          notes: notesController.text.trim(),
-                          amount: double.tryParse(amountController.text.trim()),
-                          transactionReference: referenceController.text.trim(),
-                        ));
+                    final report = const IncidentReportFormatter().format(
+                      currentDraft(),
+                    );
                     await Clipboard.setData(ClipboardData(text: report));
                     if (sheetContext.mounted) {
                       ScaffoldMessenger.of(sheetContext).showSnackBar(
                         const SnackBar(
                           behavior: SnackBarBehavior.floating,
-                          content: Text('Incident report copied. You can paste it into an email, bank chat or fraud report.'),
+                          content: Text(
+                            'Text report copied. You can paste it into an email, bank chat or fraud report.',
+                          ),
                         ),
                       );
                     }
                   },
-                  icon: const Icon(Icons.description_outlined),
-                  label: const Text('COPY INCIDENT REPORT'),
+                  icon: const Icon(Icons.content_copy_rounded),
+                  label: const Text('COPY TEXT REPORT'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Palette.cyan,
                     side: const BorderSide(color: Palette.cyan),
@@ -579,8 +625,12 @@ void _showIncidentSheet(
                 const SizedBox(height: 9),
                 TextButton.icon(
                   onPressed: () async {
-                    await ref.read(incidentControllerProvider.notifier).deleteIncident(incident.id);
-                    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                    await ref
+                        .read(incidentControllerProvider.notifier)
+                        .deleteIncident(incident.id);
+                    if (sheetContext.mounted) {
+                      Navigator.of(sheetContext).pop();
+                    }
                   },
                   icon: const Icon(Icons.delete_outline, color: Palette.red),
                   label: const Text(
@@ -611,13 +661,11 @@ class _StatusButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return OutlinedButton(
-      onPressed: () => ref.read(incidentControllerProvider.notifier).updateIncident(
-            id: incident.id,
-            status: status,
-          ),
+      onPressed: () => ref
+          .read(incidentControllerProvider.notifier)
+          .updateIncident(id: incident.id, status: status),
       style: OutlinedButton.styleFrom(
-        foregroundColor:
-            incident.status == status ? Palette.green : Palette.dim,
+        foregroundColor: incident.status == status ? Palette.green : Palette.dim,
         side: BorderSide(
           color: incident.status == status ? Palette.green : Palette.glassBorder,
         ),
@@ -629,6 +677,7 @@ class _StatusButton extends ConsumerWidget {
 
 class _SheetLabel extends StatelessWidget {
   final String text;
+
   const _SheetLabel(this.text);
 
   @override
