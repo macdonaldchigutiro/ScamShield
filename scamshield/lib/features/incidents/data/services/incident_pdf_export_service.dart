@@ -4,19 +4,28 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../domain/entities/incident_record.dart';
+import '../../domain/services/evidence_integrity.dart';
 import 'platform_download.dart';
 
 /// Builds and downloads a professional ScamShield incident report as a PDF.
 ///
-/// PDF creation is deliberately separate from platform download. That keeps
-/// the report reusable for future email/share/upload features and avoids
-/// forcing browser-specific code into the domain or presentation layers.
+/// The report is generated locally. `hidePhoneNumbers` produces a share-safe
+/// copy by masking phone-like values in user-controlled text fields while the
+/// integrity fingerprint continues to identify the original saved evidence.
 class IncidentPdfExportService {
   const IncidentPdfExportService();
 
-  Future<String> export(IncidentRecord incident) async {
-    final bytes = await buildPdf(incident);
-    final fileName = 'ScamShield_${_safeFileName(incident.id)}.pdf';
+  Future<String> export(
+    IncidentRecord incident, {
+    bool hidePhoneNumbers = false,
+  }) async {
+    final bytes = await buildPdf(
+      incident,
+      hidePhoneNumbers: hidePhoneNumbers,
+    );
+    final suffix = hidePhoneNumbers ? '_redacted' : '';
+    final fileName =
+        'ScamShield_${_safeFileName(incident.id)}$suffix.pdf';
 
     await downloadBytes(
       bytes: bytes,
@@ -28,7 +37,10 @@ class IncidentPdfExportService {
   }
 
   /// Generates the report bytes independently from saving/downloading them.
-  Future<Uint8List> buildPdf(IncidentRecord incident) async {
+  Future<Uint8List> buildPdf(
+    IncidentRecord incident, {
+    bool hidePhoneNumbers = false,
+  }) async {
     final document = pw.Document(
       title: 'ScamShield Incident Report - ${incident.id}',
       author: 'ScamShield',
@@ -36,19 +48,27 @@ class IncidentPdfExportService {
     );
 
     final accent = _accentFor(incident);
+    final fingerprint = evidenceFingerprint(incident);
     const navy = PdfColor.fromInt(0xFF0F172A);
     const muted = PdfColor.fromInt(0xFF64748B);
     const light = PdfColor.fromInt(0xFFF8FAFC);
     const border = PdfColor.fromInt(0xFFE2E8F0);
 
+    String visible(String value) {
+      final safe = _pdfSafe(value);
+      return hidePhoneNumbers ? _redactPhoneNumbers(safe) : safe;
+    }
+
     document.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(34),
+        margin: const pw.EdgeInsets.fromLTRB(34, 34, 34, 42),
         header: (_) => pw.Container(
           padding: const pw.EdgeInsets.only(bottom: 9),
           decoration: const pw.BoxDecoration(
-            border: pw.Border(bottom: pw.BorderSide(color: border, width: 0.8)),
+            border: pw.Border(
+              bottom: pw.BorderSide(color: border, width: 0.8),
+            ),
           ),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -71,30 +91,54 @@ class IncidentPdfExportService {
                   ),
                 ],
               ),
-              pw.Text(
-                'INCIDENT REPORT',
-                style: pw.TextStyle(
-                  color: accent,
-                  fontSize: 10,
-                  fontWeight: pw.FontWeight.bold,
-                ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'INCIDENT REPORT',
+                    style: pw.TextStyle(
+                      color: accent,
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  if (hidePhoneNumbers)
+                    pw.Text(
+                      'PHONE NUMBERS REDACTED',
+                      style: const pw.TextStyle(color: muted, fontSize: 6.5),
+                    ),
+                ],
               ),
             ],
           ),
         ),
-        footer: (context) => pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        footer: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
-            pw.Text(incident.id,
-                style: const pw.TextStyle(color: muted, fontSize: 7)),
-            pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
-                style: const pw.TextStyle(color: muted, fontSize: 7)),
+            pw.Container(height: 0.6, color: border),
+            pw.SizedBox(height: 5),
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(
+                  child: pw.Text(
+                    'Automated/user-provided ScamShield evidence summary - not a legal finding or official police, bank or telecom determination.',
+                    style: const pw.TextStyle(color: muted, fontSize: 6.5),
+                  ),
+                ),
+                pw.SizedBox(width: 12),
+                pw.Text(
+                  'Page ${context.pageNumber} of ${context.pagesCount}',
+                  style: const pw.TextStyle(color: muted, fontSize: 6.5),
+                ),
+              ],
+            ),
           ],
         ),
         build: (_) => [
           pw.SizedBox(height: 18),
           pw.Text(
-            incident.category,
+            visible(incident.category),
             style: pw.TextStyle(
               color: navy,
               fontSize: 23,
@@ -130,9 +174,13 @@ class IncidentPdfExportService {
                           fontWeight: pw.FontWeight.bold,
                         ),
                       ),
-                      pw.Text('RISK / 100',
-                          style: const pw.TextStyle(
-                              color: PdfColors.white, fontSize: 7)),
+                      pw.Text(
+                        incident.riskScore == 0 ? 'NO SCORE' : 'RISK / 100',
+                        style: const pw.TextStyle(
+                          color: PdfColors.white,
+                          fontSize: 7,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -142,16 +190,21 @@ class IncidentPdfExportService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       _meta('Incident ID', incident.id),
-                      _meta('Created', _formatDateTime(incident.createdAt)),
+                      _meta('Saved', _formatDateTime(incident.createdAt)),
                       _meta('Status', _statusLabel(incident.status)),
-                      _meta('Source', incident.sourceLabel),
+                      _meta('Source', visible(incident.sourceLabel)),
                       if (incident.sender.isNotEmpty)
-                        _meta('Sender / account', incident.sender),
+                        _meta('Sender / account', visible(incident.sender)),
                       if (incident.amount != null)
-                        _meta('Amount involved', incident.amount!.toStringAsFixed(2)),
+                        _meta(
+                          'Amount involved',
+                          incident.amount!.toStringAsFixed(2),
+                        ),
                       if ((incident.transactionReference ?? '').isNotEmpty)
-                        _meta('Transaction / case reference',
-                            incident.transactionReference!),
+                        _meta(
+                          'Transaction / case reference',
+                          visible(incident.transactionReference!),
+                        ),
                     ],
                   ),
                 ),
@@ -160,11 +213,19 @@ class IncidentPdfExportService {
           ),
           pw.SizedBox(height: 18),
           _heading('EVIDENCE / CONTENT', accent),
-          _card(incident.content.isEmpty ? 'Not recorded.' : incident.content),
+          _card(
+            incident.content.isEmpty
+                ? 'Not recorded.'
+                : visible(incident.content),
+          ),
           pw.SizedBox(height: 14),
           _heading('WHY SCAMSHIELD FLAGGED IT', accent),
           if (incident.reasons.isEmpty)
-            _card('No detailed warning reasons were recorded.')
+            _card(
+              incident.riskScore == 0
+                  ? 'This case was started by the user through Emergency help; no automated warning reasons were recorded.'
+                  : 'No detailed warning reasons were recorded.',
+            )
           else
             ...incident.reasons.map(
               (reason) => pw.Padding(
@@ -180,22 +241,30 @@ class IncidentPdfExportService {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text(reason.title,
-                          style: pw.TextStyle(
-                              color: navy,
-                              fontSize: 10,
-                              fontWeight: pw.FontWeight.bold)),
+                      pw.Text(
+                        visible(reason.title),
+                        style: pw.TextStyle(
+                          color: navy,
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
                       pw.SizedBox(height: 3),
-                      pw.Text(reason.explanation,
-                          style: const pw.TextStyle(
-                              color: muted, fontSize: 9, lineSpacing: 2)),
+                      pw.Text(
+                        visible(reason.explanation),
+                        style: const pw.TextStyle(
+                          color: muted,
+                          fontSize: 9,
+                          lineSpacing: 2,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
           pw.SizedBox(height: 10),
-          _heading('RECOMMENDED ACTIONS', accent),
+          _heading('RECOMMENDED / RECOVERY ACTIONS', accent),
           if (incident.recommendedActions.isEmpty)
             _card('No recommended actions were recorded.')
           else
@@ -213,17 +282,25 @@ class IncidentPdfExportService {
                         color: accent,
                         shape: pw.BoxShape.circle,
                       ),
-                      child: pw.Text('${i + 1}',
-                          style: pw.TextStyle(
-                              color: PdfColors.white,
-                              fontSize: 8,
-                              fontWeight: pw.FontWeight.bold)),
+                      child: pw.Text(
+                        '${i + 1}',
+                        style: pw.TextStyle(
+                          color: PdfColors.white,
+                          fontSize: 8,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
                     ),
                     pw.SizedBox(width: 8),
                     pw.Expanded(
-                      child: pw.Text(incident.recommendedActions[i],
-                          style: const pw.TextStyle(
-                              color: navy, fontSize: 9.5, lineSpacing: 2)),
+                      child: pw.Text(
+                        visible(incident.recommendedActions[i]),
+                        style: const pw.TextStyle(
+                          color: navy,
+                          fontSize: 9.5,
+                          lineSpacing: 2,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -231,8 +308,38 @@ class IncidentPdfExportService {
           if (incident.notes.isNotEmpty) ...[
             pw.SizedBox(height: 12),
             _heading('USER NOTES / ACTIONS TAKEN', accent),
-            _card(incident.notes),
+            _card(visible(incident.notes)),
           ],
+          pw.SizedBox(height: 14),
+          _heading('EVIDENCE INTEGRITY', accent),
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: light,
+              borderRadius: pw.BorderRadius.circular(6),
+              border: pw.Border.all(color: border),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                _meta(
+                  'Original saved timestamp',
+                  incident.createdAt.toUtc().toIso8601String(),
+                ),
+                _meta('SHA-256 evidence fingerprint', fingerprint),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  'The fingerprint identifies the original saved evidence fields (incident ID, saved timestamp, source, sender and content). Later case notes/status changes do not alter this fingerprint.',
+                  style: const pw.TextStyle(
+                    color: muted,
+                    fontSize: 7.5,
+                    lineSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
+          ),
           pw.SizedBox(height: 16),
           pw.Container(
             width: double.infinity,
@@ -245,7 +352,7 @@ class IncidentPdfExportService {
               ),
             ),
             child: pw.Text(
-              'Important: This report is generated by ScamShield from locally saved investigation evidence. It is decision support and is not a police, bank, telecom or official case reference. Keep original messages, screenshots, receipts and transaction records where available.',
+              'Important: This report is generated from locally saved ScamShield evidence. Automated analysis is decision support only and is not a legal finding or an official police, bank, regulator or telecom case reference. Keep original messages, screenshots, receipts and transaction records where available.',
               style: const pw.TextStyle(
                 color: PdfColor.fromInt(0xFF9A3412),
                 fontSize: 8,
@@ -267,17 +374,24 @@ class IncidentPdfExportService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.SizedBox(
-            width: 105,
-            child: pw.Text(label,
-                style: pw.TextStyle(
-                    color: const PdfColor.fromInt(0xFF475569),
-                    fontSize: 8.5,
-                    fontWeight: pw.FontWeight.bold)),
+            width: 112,
+            child: pw.Text(
+              _pdfSafe(label),
+              style: pw.TextStyle(
+                color: const PdfColor.fromInt(0xFF475569),
+                fontSize: 8.5,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
           ),
           pw.Expanded(
-            child: pw.Text(value,
-                style: const pw.TextStyle(
-                    color: PdfColor.fromInt(0xFF0F172A), fontSize: 8.5)),
+            child: pw.Text(
+              _pdfSafe(value),
+              style: const pw.TextStyle(
+                color: PdfColor.fromInt(0xFF0F172A),
+                fontSize: 8.5,
+              ),
+            ),
           ),
         ],
       ),
@@ -286,12 +400,15 @@ class IncidentPdfExportService {
 
   pw.Widget _heading(String value, PdfColor accent) => pw.Padding(
         padding: const pw.EdgeInsets.only(bottom: 7),
-        child: pw.Text(value,
-            style: pw.TextStyle(
-                color: accent,
-                fontSize: 9,
-                fontWeight: pw.FontWeight.bold,
-                letterSpacing: 1.2)),
+        child: pw.Text(
+          _pdfSafe(value),
+          style: pw.TextStyle(
+            color: accent,
+            fontSize: 9,
+            fontWeight: pw.FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
       );
 
   pw.Widget _card(String value) => pw.Container(
@@ -300,13 +417,18 @@ class IncidentPdfExportService {
         decoration: pw.BoxDecoration(
           color: const PdfColor.fromInt(0xFFF8FAFC),
           borderRadius: pw.BorderRadius.circular(6),
-          border: pw.Border.all(color: const PdfColor.fromInt(0xFFE2E8F0)),
+          border: pw.Border.all(
+            color: const PdfColor.fromInt(0xFFE2E8F0),
+          ),
         ),
-        child: pw.Text(value,
-            style: const pw.TextStyle(
-                color: PdfColor.fromInt(0xFF0F172A),
-                fontSize: 9.5,
-                lineSpacing: 2)),
+        child: pw.Text(
+          _pdfSafe(value),
+          style: const pw.TextStyle(
+            color: PdfColor.fromInt(0xFF0F172A),
+            fontSize: 9.5,
+            lineSpacing: 2,
+          ),
+        ),
       );
 
   PdfColor _accentFor(IncidentRecord incident) {
@@ -341,5 +463,26 @@ class IncidentPdfExportService {
 
   String _safeFileName(String value) {
     return value.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+  }
+
+  /// Built-in PDF fonts do not cover every smart punctuation glyph reliably.
+  /// Normalize common message punctuation so offline reports render cleanly.
+  String _pdfSafe(String value) {
+    return value
+        .replaceAll('’', "'")
+        .replaceAll('‘', "'")
+        .replaceAll('“', '"')
+        .replaceAll('”', '"')
+        .replaceAll('—', '-')
+        .replaceAll('–', '-')
+        .replaceAll('…', '...')
+        .replaceAll('\u00A0', ' ');
+  }
+
+  String _redactPhoneNumbers(String value) {
+    final phoneLike = RegExp(
+      r'(?<!\w)(?:\+?\d[\d\s().-]{6,}\d)(?!\w)',
+    );
+    return value.replaceAllMapped(phoneLike, (_) => '[PHONE NUMBER HIDDEN]');
   }
 }
