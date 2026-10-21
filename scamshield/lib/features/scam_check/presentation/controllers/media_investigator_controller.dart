@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/services/media_scan_service.dart';
 import '../../domain/entities/media_scan_result.dart';
 import '../../domain/entities/scam_investigation.dart';
+import '../../domain/use_cases/investigate_scam.dart';
 import 'scam_investigator_controller.dart';
 
 final mediaScanServiceProvider = Provider<MediaScanService>((ref) {
