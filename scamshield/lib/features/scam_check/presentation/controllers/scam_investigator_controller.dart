@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/providers/app_providers.dart';
 import '../../../incidents/presentation/controllers/incident_controller.dart';
 import '../../data/repositories/rule_based_scam_investigation_repository.dart';
 import '../../domain/entities/scam_investigation.dart';
@@ -8,7 +9,12 @@ import '../../domain/use_cases/investigate_scam.dart';
 
 final scamInvestigationRepositoryProvider =
     Provider<ScamInvestigationRepository>((ref) {
-  return const RuleBasedScamInvestigationRepository();
+  // Reuse the same prototype threat source that powers Partner View. This keeps
+  // number checks internally consistent: if Partner View says a number has been
+  // flagged, the investigator can see the same sample reputation evidence.
+  return RuleBasedScamInvestigationRepository(
+    prototypeThreatData: ref.watch(threatSimProvider),
+  );
 });
 
 final investigateScamProvider = Provider<InvestigateScam>((ref) {
@@ -83,22 +89,28 @@ class ScamInvestigatorController extends StateNotifier<ScamInvestigatorState> {
         sender: sender,
       );
 
-      // Low-risk checks are intentionally not stored. Suspicious/high-risk
-      // results are preserved automatically so evidence is not lost by mistake.
-      if (result.verdict != InvestigationVerdict.lowRisk) {
-        await _incidentController.saveInvestigation(
-          investigation: result,
-          content: content,
-          sourceLabel: _sourceLabel(inputType, channel),
-          sender: sender,
-        );
-      }
-
-      state = state.copyWith(isLoading: false, result: result);
-    } catch (error) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: error.toString(),
+        result: result,
+        clearError: true,
+      );
+
+      // Preserve only concerning investigations. Low-risk checks should remain
+      // lightweight and private instead of filling the Evidence Locker.
+      if (result.verdict != InvestigationVerdict.lowRisk) {
+        await _incidentController.saveInvestigation(
+          sourceLabel: _sourceLabel(inputType, channel),
+          content: content.trim(),
+          sender: sender.trim(),
+          investigation: result,
+        );
+      }
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        clearResult: true,
+        errorMessage:
+            'ScamShield could not complete this check. Please try again.',
       );
     }
   }
@@ -112,29 +124,29 @@ class ScamInvestigatorController extends StateNotifier<ScamInvestigatorState> {
     InvestigationChannel channel,
   ) {
     switch (inputType) {
+      case InvestigationInputType.message:
+        return 'Message • ${_channelLabel(channel)}';
       case InvestigationInputType.link:
         return 'Suspicious link';
       case InvestigationInputType.phoneNumber:
-        return 'Phone / caller details';
-      case InvestigationInputType.message:
-        return _channelLabel(channel);
+        return 'Phone number';
     }
   }
 
   String _channelLabel(InvestigationChannel channel) {
     switch (channel) {
       case InvestigationChannel.sms:
-        return 'SMS message';
+        return 'SMS';
       case InvestigationChannel.whatsapp:
-        return 'WhatsApp message';
+        return 'WhatsApp';
       case InvestigationChannel.facebook:
-        return 'Facebook message';
+        return 'Facebook';
       case InvestigationChannel.email:
         return 'Email';
       case InvestigationChannel.phoneCall:
-        return 'Phone call';
+        return 'Call';
       case InvestigationChannel.other:
-        return 'Message';
+        return 'Other';
     }
   }
 }
