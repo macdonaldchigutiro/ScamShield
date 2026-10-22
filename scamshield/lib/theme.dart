@@ -15,6 +15,7 @@ class Palette {
   static const text = Color(0xFFF1F5F9);
   static const dim = Color(0xFFB8C4D9);
   static const muted = Color(0xFF94A3B8);
+  static const textSecondary = dim;
 
   static const cyan = Color(0xFF60A5FA);
   static const violet = Color(0xFF93C5FD);
