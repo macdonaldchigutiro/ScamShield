@@ -447,13 +447,23 @@ class _RecentHeader extends StatelessWidget {
     return Row(
       children: [
         const Expanded(
-          child: Text(
-            'Your recent investigations',
-            style: TextStyle(
-              color: Palette.text,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your recent investigations',
+                style: TextStyle(
+                  color: Palette.text,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 3),
+              Text(
+                'The latest cases saved to your Evidence Locker.',
+                style: TextStyle(color: Palette.textSecondary, fontSize: 12.5),
+              ),
+            ],
           ),
         ),
         TextButton.icon(
@@ -491,27 +501,45 @@ class _EmptyRecent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text(
-            'Nothing saved yet',
-            style: TextStyle(color: Palette.text, fontSize: 17, fontWeight: FontWeight.w800),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Palette.cyan.withOpacity(.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Palette.cyan.withOpacity(.22)),
+            ),
+            child: const Icon(Icons.history_rounded, color: Palette.cyan),
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Suspicious and high-risk checks are saved on this device so you can review them later or export a report.',
-            style: TextStyle(color: Palette.textSecondary, fontSize: 14, height: 1.4),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No investigations saved yet',
+                  style: TextStyle(color: Palette.text, fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Suspicious and high-risk checks will appear here with their source, status and evidence preview.',
+                  style: TextStyle(color: Palette.textSecondary, fontSize: 13, height: 1.4),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(width: 10),
           OutlinedButton(
             onPressed: onStart,
             style: OutlinedButton.styleFrom(
               foregroundColor: Palette.text,
               side: const BorderSide(color: Palette.line),
-              minimumSize: const Size(48, 48),
+              minimumSize: const Size(48, 46),
             ),
-            child: const Text('Check your first message'),
+            child: const Text('Start a check'),
           ),
         ],
       ),
@@ -576,11 +604,9 @@ class _RecentInvestigationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _verdictColor(incident.verdict);
-    final created = incident.createdAt.toLocal();
-    final when =
-        '${created.day.toString().padLeft(2, '0')}/${created.month.toString().padLeft(2, '0')} '
-        '${created.hour.toString().padLeft(2, '0')}:${created.minute.toString().padLeft(2, '0')}';
+    final color = incident.riskScore == 0 ? Palette.cyan : _verdictColor(incident.verdict);
+    final preview = incident.content.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final statusColor = _statusColor(incident.status);
 
     return Material(
       color: Colors.transparent,
@@ -589,25 +615,48 @@ class _RecentInvestigationCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: GlassCard(
-          padding: const EdgeInsets.all(14),
-          borderColor: color.withOpacity(.25),
+          padding: const EdgeInsets.all(15),
+          borderColor: color.withOpacity(.28),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  color: color.withOpacity(.11),
+                  borderRadius: BorderRadius.circular(16),
+                  color: color.withOpacity(.1),
+                  border: Border.all(color: color.withOpacity(.3)),
                 ),
-                child: Icon(_verdictIcon(incident.verdict), color: color),
+                child: incident.riskScore == 0
+                    ? const Text(
+                        'CASE',
+                        style: TextStyle(
+                          color: Palette.cyan,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .8,
+                        ),
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${incident.riskScore}',
+                            style: TextStyle(color: color, fontSize: 19, fontWeight: FontWeight.w900),
+                          ),
+                          const Text('RISK', style: TextStyle(color: Palette.muted, fontSize: 8)),
+                        ],
+                      ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
@@ -615,42 +664,45 @@ class _RecentInvestigationCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Palette.text,
-                              fontSize: 14,
+                              fontSize: 14.5,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
-                        Text(when, style: const TextStyle(color: Palette.muted, fontSize: 11)),
+                        const SizedBox(width: 10),
+                        Text(
+                          _friendlyDate(incident.createdAt),
+                          style: const TextStyle(color: Palette.muted, fontSize: 10.5),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      incident.content.isEmpty ? incident.sourceLabel : incident.content,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Palette.textSecondary, fontSize: 13, height: 1.35),
-                    ),
-                    const SizedBox(height: 6),
+                    if (preview.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        preview,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Palette.textSecondary, fontSize: 13, height: 1.35),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 7,
-                      runSpacing: 5,
+                      runSpacing: 6,
                       children: [
                         _MiniBadge(label: incident.sourceLabel, color: Palette.cyan),
-                        _MiniBadge(label: _verdictLabel(incident.verdict), color: color),
+                        if (incident.riskScore != 0)
+                          _MiniBadge(label: _verdictLabel(incident.verdict), color: color),
+                        _MiniBadge(label: _statusLabel(incident.status), color: statusColor),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Column(
-                children: [
-                  Text(
-                    '${incident.riskScore}',
-                    style: TextStyle(color: color, fontSize: 21, fontWeight: FontWeight.w900),
-                  ),
-                  const Text('RISK', style: TextStyle(color: Palette.muted, fontSize: 9)),
-                ],
+              const SizedBox(width: 8),
+              const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: Icon(Icons.chevron_right_rounded, color: Palette.muted),
               ),
             ],
           ),
@@ -778,17 +830,6 @@ Color _verdictColor(InvestigationVerdict verdict) {
   }
 }
 
-IconData _verdictIcon(InvestigationVerdict verdict) {
-  switch (verdict) {
-    case InvestigationVerdict.highRisk:
-      return Icons.gpp_bad_rounded;
-    case InvestigationVerdict.suspicious:
-      return Icons.warning_amber_rounded;
-    case InvestigationVerdict.lowRisk:
-      return Icons.verified_user_rounded;
-  }
-}
-
 String _verdictLabel(InvestigationVerdict verdict) {
   switch (verdict) {
     case InvestigationVerdict.highRisk:
@@ -798,4 +839,68 @@ String _verdictLabel(InvestigationVerdict verdict) {
     case InvestigationVerdict.lowRisk:
       return 'Low risk';
   }
+}
+
+Color _statusColor(IncidentStatus status) {
+  switch (status) {
+    case IncidentStatus.reviewing:
+      return Palette.cyan;
+    case IncidentStatus.actionRequired:
+      return Palette.amber;
+    case IncidentStatus.reported:
+      return Palette.violet;
+    case IncidentStatus.resolved:
+      return Palette.green;
+  }
+}
+
+String _statusLabel(IncidentStatus status) {
+  switch (status) {
+    case IncidentStatus.reviewing:
+      return 'Reviewing';
+    case IncidentStatus.actionRequired:
+      return 'Action required';
+    case IncidentStatus.reported:
+      return 'Reported';
+    case IncidentStatus.resolved:
+      return 'Resolved';
+  }
+}
+
+String _friendlyDate(DateTime value) {
+  final now = DateTime.now();
+  final local = value.toLocal();
+  final today = DateTime(now.year, now.month, now.day);
+  final date = DateTime(local.year, local.month, local.day);
+  final difference = today.difference(date).inDays;
+
+  String clock(DateTime time) {
+    final hour = time.hour == 0
+        ? 12
+        : time.hour > 12
+            ? time.hour - 12
+            : time.hour;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  if (difference == 0) return 'Today, ${clock(local)}';
+  if (difference == 1) return 'Yesterday, ${clock(local)}';
+
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${local.day} ${months[local.month - 1]}';
 }
