@@ -78,6 +78,8 @@ class ThreatIntelligenceScreen extends ConsumerWidget {
                   const SizedBox(height: 14),
                   _overview(incidents),
                   const SizedBox(height: 14),
+                  _responseLifecycle(incidents),
+                  const SizedBox(height: 14),
                   _section('Top scam categories', categories, Icons.category_outlined),
                   const SizedBox(height: 12),
                   _section('Investigation sources', sources, Icons.source_outlined),
@@ -111,6 +113,89 @@ class ThreatIntelligenceScreen extends ConsumerWidget {
         _metric('Reported', reported, Palette.violet),
         _metric('Resolved', resolved, Palette.green),
       ],
+    );
+  }
+
+  Widget _responseLifecycle(List<IncidentRecord> incidents) {
+    final reviewing =
+        incidents.where((e) => e.status == IncidentStatus.reviewing).length;
+    final containment = incidents
+        .where((e) => e.status == IncidentStatus.actionRequired)
+        .length;
+    final reported =
+        incidents.where((e) => e.status == IncidentStatus.reported).length;
+    final recovered =
+        incidents.where((e) => e.status == IncidentStatus.resolved).length;
+
+    final stages = [
+      ('Detection / triage', reviewing, Palette.cyan, Icons.search_rounded),
+      ('Containment', containment, Palette.amber, Icons.gpp_maybe_outlined),
+      ('Reported / escalation', reported, Palette.violet, Icons.outgoing_mail),
+      ('Recovery / resolved', recovered, Palette.green, Icons.task_alt_rounded),
+    ];
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'INCIDENT RESPONSE LIFECYCLE',
+            style: TextStyle(
+              color: Palette.cyan,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'A SOC-style view of where saved cases currently sit. Counts come from the Evidence Locker status, not simulated events or invented timestamps.',
+            style: TextStyle(color: Palette.dim, height: 1.4, fontSize: 12.5),
+          ),
+          const SizedBox(height: 14),
+          for (var i = 0; i < stages.length; i++) ...[
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: stages[i].$3.withOpacity(.11),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: stages[i].$3.withOpacity(.35)),
+                  ),
+                  child: Icon(stages[i].$4, color: stages[i].$3, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    stages[i].$1,
+                    style: const TextStyle(
+                      color: Palette.text,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${stages[i].$2}',
+                  style: TextStyle(
+                    color: stages[i].$3,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+            if (i != stages.length - 1)
+              Container(
+                margin: const EdgeInsets.only(left: 18),
+                width: 2,
+                height: 12,
+                color: Palette.line,
+              ),
+          ],
+        ],
+      ),
     );
   }
 
