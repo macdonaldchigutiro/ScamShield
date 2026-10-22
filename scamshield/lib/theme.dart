@@ -3,24 +3,24 @@ import 'package:flutter/material.dart';
 
 /// Shared visual tokens for ScamShield.
 ///
-/// The palette keeps the dark identity but deliberately reduces the neon
-/// "hacker console" feeling. Higher-contrast text and calmer surfaces make the
-/// product easier to read for stressed, older and non-technical users.
+/// The palette uses a calm navy base with high-contrast text so urgent content
+/// is easy to read without making the whole product feel like a cyber console.
 class Palette {
   static const bg = Color(0xFF0B1220);
   static const bgTop = Color(0xFF0B1220);
-  static const surface = Color(0xFF131C2E);
-  static const surfaceHi = Color(0xFF1A2540);
-  static const line = Color(0xFF2A3753);
+  static const surface = Color(0xFF111B2E);
+  static const surfaceHi = Color(0xFF16233A);
+  static const line = Color(0xFF2B3A55);
 
-  static const text = Color(0xFFEAF0FA);
-  static const dim = Color(0xFFA9B6CC);
+  static const text = Color(0xFFF1F5F9);
+  static const dim = Color(0xFFB8C4D9);
+  static const muted = Color(0xFF94A3B8);
 
-  static const cyan = Color(0xFF4DA3FF);
-  static const violet = Color(0xFF8B7CFF);
+  static const cyan = Color(0xFF60A5FA);
+  static const violet = Color(0xFF93C5FD);
   static const green = Color(0xFF2DD4A7);
   static const amber = Color(0xFFF5B83D);
-  static const red = Color(0xFFFF5A5F);
+  static const red = Color(0xFFEF4444);
 
   // Compatibility aliases used by older widgets while the app is migrated.
   static const glass = surface;
@@ -31,7 +31,7 @@ const shieldGradient = LinearGradient(
   colors: [Palette.cyan, Palette.violet],
 );
 const dangerGradient = LinearGradient(
-  colors: [Palette.red, Color(0xFFFF7A59)],
+  colors: [Palette.red, Color(0xFFF87171)],
 );
 
 void drawText(
@@ -59,10 +59,6 @@ void drawText(
 }
 
 /// Calm dark background used across the app.
-///
-/// The old animated scan-line/grid was attractive but made the product feel
-/// like a cyber-security console. A subtle gradient keeps the brand identity
-/// without competing with urgent content.
 class CyberBackground extends StatelessWidget {
   final Widget child;
   const CyberBackground({super.key, required this.child});
@@ -74,7 +70,7 @@ class CyberBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0B1220), Color(0xFF0D1527)],
+          colors: [Color(0xFF0B1220), Color(0xFF0D1627)],
         ),
       ),
       child: child,
@@ -83,9 +79,6 @@ class CyberBackground extends StatelessWidget {
 }
 
 /// Standard content card.
-///
-/// The class keeps its historic name to avoid a noisy migration, but the
-/// implementation now uses a solid high-contrast surface instead of blur/glow.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
@@ -178,37 +171,40 @@ class RingPainter extends CustomPainter {
   final Color color;
   final double thickness;
 
-  RingPainter(this.value, this.color, {this.thickness = 10});
+  const RingPainter({
+    required this.value,
+    required this.color,
+    this.thickness = 8,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
+    final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - thickness;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    final progress = value.clamp(0.0, 1.0).toDouble();
+    final base = Paint()
+      ..color = Palette.line
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = thickness
+      ..strokeCap = StrokeCap.round;
+    final progress = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = thickness
+      ..strokeCap = StrokeCap.round;
 
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..color = Palette.line
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = thickness,
-    );
+    canvas.drawCircle(center, radius, base);
     canvas.drawArc(
-      rect,
+      Rect.fromCircle(center: center, radius: radius),
       -math.pi / 2,
-      2 * math.pi * progress,
+      math.pi * 2 * value.clamp(0, 1),
       false,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = thickness
-        ..strokeCap = StrokeCap.round,
+      progress,
     );
   }
 
   @override
-  bool shouldRepaint(covariant RingPainter old) =>
-      old.value != value || old.color != color || old.thickness != thickness;
+  bool shouldRepaint(covariant RingPainter oldDelegate) =>
+      oldDelegate.value != value ||
+      oldDelegate.color != color ||
+      oldDelegate.thickness != thickness;
 }
