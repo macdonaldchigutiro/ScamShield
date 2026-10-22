@@ -14,11 +14,6 @@ import '../protect_screen.dart';
 import '../sos_screen.dart';
 import '../theme.dart';
 
-/// Persistent application shell.
-///
-/// Desktop uses a labelled navigation rail and capped content width. Mobile
-/// keeps a familiar bottom bar. The shell owns navigation only; Home owns its
-/// own content hierarchy, including protection status and recent activity.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
@@ -74,7 +69,8 @@ class AppShell extends ConsumerWidget {
               children: [
                 _AppHeader(
                   desktop: desktop,
-                  protectionPercentage: protection.percentage,
+                  protectionCompleted: protection.completedCount,
+                  protectionTotal: protection.totalCount,
                   onProtectionPressed: () => selectTab(2),
                   onEvidencePressed: openEvidence,
                   onPartnerPressed: openPartner,
@@ -201,10 +197,12 @@ class _DesktopNavigation extends StatelessWidget {
   }
 }
 
-/// Brand header with plainly labelled high-priority actions.
+enum _MoreAction { intelligence, partner, privacy, help }
+
 class _AppHeader extends StatelessWidget {
   final bool desktop;
-  final int protectionPercentage;
+  final int protectionCompleted;
+  final int protectionTotal;
   final VoidCallback onProtectionPressed;
   final VoidCallback onEvidencePressed;
   final VoidCallback onPartnerPressed;
@@ -215,7 +213,8 @@ class _AppHeader extends StatelessWidget {
 
   const _AppHeader({
     required this.desktop,
-    required this.protectionPercentage,
+    required this.protectionCompleted,
+    required this.protectionTotal,
     required this.onProtectionPressed,
     required this.onEvidencePressed,
     required this.onPartnerPressed,
@@ -225,16 +224,27 @@ class _AppHeader extends StatelessWidget {
     required this.onHelpPressed,
   });
 
+  void _handleMore(_MoreAction action) {
+    switch (action) {
+      case _MoreAction.intelligence:
+        onIntelligencePressed();
+      case _MoreAction.partner:
+        onPartnerPressed();
+      case _MoreAction.privacy:
+        onPrivacyPressed();
+      case _MoreAction.help:
+        onHelpPressed();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final protectionColor = protectionPercentage >= 80
-        ? Palette.green
-        : protectionPercentage >= 40
-            ? Palette.amber
-            : Palette.cyan;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 14, 12, 10),
+    return Container(
+      padding: EdgeInsets.fromLTRB(desktop ? 24 : 16, 14, 12, 12),
+      decoration: const BoxDecoration(
+        color: Palette.bgTop,
+        border: Border(bottom: BorderSide(color: Palette.line)),
+      ),
       child: Row(
         children: [
           const Icon(Icons.shield_rounded, color: Palette.cyan, size: 28),
@@ -253,7 +263,7 @@ class _AppHeader extends StatelessWidget {
                 ),
                 Text(
                   'Digital fraud defence',
-                  style: TextStyle(color: Palette.dim, fontSize: 12),
+                  style: TextStyle(color: Palette.dim, fontSize: 12.5),
                 ),
               ],
             ),
@@ -261,65 +271,120 @@ class _AppHeader extends StatelessWidget {
           if (desktop) ...[
             _HeaderAction(
               icon: Icons.verified_user_outlined,
-              label: 'Protection $protectionPercentage%',
-              color: protectionColor,
+              label: 'Protection $protectionCompleted/$protectionTotal',
               onPressed: onProtectionPressed,
             ),
             _HeaderAction(
               icon: Icons.inventory_2_outlined,
               label: 'Evidence',
-              color: Palette.cyan,
               onPressed: onEvidencePressed,
             ),
-            IconButton(
-              tooltip: 'Threat intelligence',
-              onPressed: onIntelligencePressed,
-              color: Palette.violet,
-              icon: const Icon(Icons.radar_rounded),
-            ),
-            IconButton(
-              tooltip: 'Partner view',
-              onPressed: onPartnerPressed,
-              color: Palette.violet,
-              icon: const Icon(Icons.business_center_outlined),
-            ),
-            IconButton(
-              tooltip: 'Privacy & analysis',
-              onPressed: onPrivacyPressed,
-              color: Palette.green,
-              icon: const Icon(Icons.privacy_tip_outlined),
-            ),
-            _HeaderAction(
-              icon: Icons.emergency_rounded,
-              label: "I've been scammed",
-              color: Palette.red,
-              filled: true,
-              onPressed: onEmergencyPressed,
-            ),
-            IconButton(
-              tooltip: 'Help',
-              onPressed: onHelpPressed,
-              color: Palette.dim,
-              icon: const Icon(Icons.help_outline),
+            _EmergencyAction(onPressed: onEmergencyPressed),
+            const SizedBox(width: 6),
+            PopupMenuButton<_MoreAction>(
+              tooltip: 'More',
+              onSelected: _handleMore,
+              color: Palette.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: const BorderSide(color: Palette.line),
+              ),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: _MoreAction.intelligence,
+                  child: _MoreItem(
+                    icon: Icons.radar_rounded,
+                    label: 'Threat intelligence',
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _MoreAction.partner,
+                  child: _MoreItem(
+                    icon: Icons.business_center_outlined,
+                    label: 'Partner view',
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _MoreAction.privacy,
+                  child: _MoreItem(
+                    icon: Icons.privacy_tip_outlined,
+                    label: 'Privacy & analysis',
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _MoreAction.help,
+                  child: _MoreItem(
+                    icon: Icons.help_outline_rounded,
+                    label: 'Help',
+                  ),
+                ),
+              ],
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 48),
+                padding: const EdgeInsets.symmetric(horizontal: 13),
+                decoration: BoxDecoration(
+                  color: Palette.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Palette.line),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.more_horiz_rounded, color: Palette.dim, size: 20),
+                    SizedBox(width: 7),
+                    Text(
+                      'More',
+                      style: TextStyle(
+                        color: Palette.text,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ] else ...[
-            IconButton(
-              tooltip: 'Threat intelligence',
-              onPressed: onIntelligencePressed,
-              color: Palette.violet,
-              icon: const Icon(Icons.radar_rounded),
-            ),
-            IconButton(
-              tooltip: 'Privacy & analysis',
-              onPressed: onPrivacyPressed,
-              color: Palette.green,
-              icon: const Icon(Icons.privacy_tip_outlined),
-            ),
             IconButton(
               tooltip: 'Evidence Locker',
               onPressed: onEvidencePressed,
               color: Palette.cyan,
               icon: const Icon(Icons.inventory_2_outlined),
+            ),
+            PopupMenuButton<_MoreAction>(
+              tooltip: 'More',
+              onSelected: _handleMore,
+              color: Palette.surface,
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: _MoreAction.intelligence,
+                  child: _MoreItem(
+                    icon: Icons.radar_rounded,
+                    label: 'Threat intelligence',
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _MoreAction.partner,
+                  child: _MoreItem(
+                    icon: Icons.business_center_outlined,
+                    label: 'Partner view',
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _MoreAction.privacy,
+                  child: _MoreItem(
+                    icon: Icons.privacy_tip_outlined,
+                    label: 'Privacy & analysis',
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _MoreAction.help,
+                  child: _MoreItem(
+                    icon: Icons.help_outline_rounded,
+                    label: 'Help',
+                  ),
+                ),
+              ],
+              icon: const Icon(Icons.more_horiz_rounded, color: Palette.dim),
             ),
             FilledButton(
               onPressed: onEmergencyPressed,
@@ -341,16 +406,12 @@ class _AppHeader extends StatelessWidget {
 class _HeaderAction extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
   final VoidCallback onPressed;
-  final bool filled;
 
   const _HeaderAction({
     required this.icon,
     required this.label,
-    required this.color,
     required this.onPressed,
-    this.filled = false,
   });
 
   @override
@@ -359,19 +420,70 @@ class _HeaderAction extends StatelessWidget {
       padding: const EdgeInsets.only(left: 6),
       child: TextButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        label: Text(label),
+        icon: const SizedBox.shrink(),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: Palette.cyan),
+            const SizedBox(width: 7),
+            Text(label),
+          ],
+        ),
         style: TextButton.styleFrom(
-          foregroundColor: filled ? Colors.white : color,
-          backgroundColor: filled ? color : Colors.transparent,
-          side: BorderSide(color: filled ? color : Palette.line),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          foregroundColor: Palette.text,
+          backgroundColor: Palette.surface,
+          side: const BorderSide(color: Palette.line),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
           minimumSize: const Size(48, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EmergencyAction extends StatelessWidget {
+  final VoidCallback onPressed;
+  const _EmergencyAction({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.emergency_rounded, size: 18),
+        label: const Text("I've been scammed"),
+        style: FilledButton.styleFrom(
+          backgroundColor: Palette.red,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          minimumSize: const Size(48, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _MoreItem({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 19, color: Palette.cyan),
+        const SizedBox(width: 10),
+        Text(label, style: const TextStyle(color: Palette.text)),
+      ],
     );
   }
 }
