@@ -118,31 +118,11 @@ class AppShell extends ConsumerWidget {
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             onDestinationSelected: selectTab,
             destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home_rounded),
-                label: 'Home',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.manage_search_outlined),
-                selectedIcon: Icon(Icons.manage_search_rounded),
-                label: 'Check',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.verified_user_outlined),
-                selectedIcon: Icon(Icons.verified_user_rounded),
-                label: 'Protect',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.support_agent_outlined),
-                selectedIcon: Icon(Icons.support_agent),
-                label: 'Help',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.menu_book_outlined),
-                selectedIcon: Icon(Icons.menu_book),
-                label: 'Learn',
-              ),
+              NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
+              NavigationDestination(icon: Icon(Icons.manage_search_outlined), selectedIcon: Icon(Icons.manage_search_rounded), label: 'Check'),
+              NavigationDestination(icon: Icon(Icons.verified_user_outlined), selectedIcon: Icon(Icons.verified_user_rounded), label: 'Protect'),
+              NavigationDestination(icon: Icon(Icons.support_agent_outlined), selectedIcon: Icon(Icons.support_agent), label: 'Help'),
+              NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Learn'),
             ],
           ),
         );
@@ -160,40 +140,93 @@ class _DesktopNavigation extends StatelessWidget {
     required this.onSelected,
   });
 
+  static const _items = <(IconData, IconData, String)>[
+    (Icons.home_outlined, Icons.home_rounded, 'Home'),
+    (Icons.manage_search_outlined, Icons.manage_search_rounded, 'Check'),
+    (Icons.verified_user_outlined, Icons.verified_user_rounded, 'Protect'),
+    (Icons.support_agent_outlined, Icons.support_agent, 'Help'),
+    (Icons.menu_book_outlined, Icons.menu_book, 'Learn'),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return NavigationRail(
-      selectedIndex: selectedIndex,
-      onDestinationSelected: onSelected,
-      labelType: NavigationRailLabelType.all,
-      minWidth: 96,
-      destinations: const [
-        NavigationRailDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home_rounded),
-          label: Text('Home'),
+    return Container(
+      width: 104,
+      color: Palette.bgTop,
+      padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
+      child: Column(
+        children: [
+          for (var index = 0; index < _items.length; index++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _NavItem(
+                icon: selectedIndex == index ? _items[index].$2 : _items[index].$1,
+                label: _items[index].$3,
+                selected: selectedIndex == index,
+                onTap: () => onSelected(index),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 72,
+          decoration: BoxDecoration(
+            color: selected ? Palette.cyan.withOpacity(.09) : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: Border(
+              left: BorderSide(
+                color: selected ? Palette.cyan : Colors.transparent,
+                width: 3,
+              ),
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 25,
+                color: selected ? Palette.cyan : Palette.textSecondary,
+              ),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? Palette.text : Palette.textSecondary,
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
-        NavigationRailDestination(
-          icon: Icon(Icons.manage_search_outlined),
-          selectedIcon: Icon(Icons.manage_search_rounded),
-          label: Text('Check'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.verified_user_outlined),
-          selectedIcon: Icon(Icons.verified_user_rounded),
-          label: Text('Protect'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.support_agent_outlined),
-          selectedIcon: Icon(Icons.support_agent),
-          label: Text('Help'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.menu_book_outlined),
-          selectedIcon: Icon(Icons.menu_book),
-          label: Text('Learn'),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -241,31 +274,41 @@ class _AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(desktop ? 24 : 16, 10, 12, 10),
+      minHeight: desktop ? 88 : 76,
+      padding: EdgeInsets.fromLTRB(desktop ? 26 : 16, 10, 12, 10),
       decoration: const BoxDecoration(
         color: Palette.bgTop,
         border: Border(bottom: BorderSide(color: Palette.line)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          ScamShieldBrandLogo(size: desktop ? 58 : 50),
-          const SizedBox(width: 11),
-          const Expanded(
+          ScamShieldBrandLogo(size: desktop ? 62 : 50),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'ScamShield',
                   style: TextStyle(
                     color: Palette.text,
-                    fontSize: 22,
+                    fontSize: desktop ? 23 : 20,
+                    height: 1.0,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: -.3,
                   ),
                 ),
-                Text(
+                const SizedBox(height: 5),
+                const Text(
                   'Digital fraud defence',
-                  style: TextStyle(color: Palette.dim, fontSize: 12.5),
+                  style: TextStyle(
+                    color: Palette.textSecondary,
+                    fontSize: 12.5,
+                    height: 1.0,
+                  ),
                 ),
               ],
             ),
@@ -283,68 +326,7 @@ class _AppHeader extends StatelessWidget {
             ),
             _EmergencyAction(onPressed: onEmergencyPressed),
             const SizedBox(width: 6),
-            PopupMenuButton<_MoreAction>(
-              tooltip: 'More',
-              onSelected: _handleMore,
-              color: Palette.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: const BorderSide(color: Palette.line),
-              ),
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: _MoreAction.intelligence,
-                  child: _MoreItem(
-                    icon: Icons.radar_rounded,
-                    label: 'Threat intelligence',
-                  ),
-                ),
-                PopupMenuItem(
-                  value: _MoreAction.partner,
-                  child: _MoreItem(
-                    icon: Icons.business_center_outlined,
-                    label: 'Partner view',
-                  ),
-                ),
-                PopupMenuItem(
-                  value: _MoreAction.privacy,
-                  child: _MoreItem(
-                    icon: Icons.privacy_tip_outlined,
-                    label: 'Privacy & analysis',
-                  ),
-                ),
-                PopupMenuItem(
-                  value: _MoreAction.help,
-                  child: _MoreItem(
-                    icon: Icons.help_outline_rounded,
-                    label: 'Help',
-                  ),
-                ),
-              ],
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 48),
-                padding: const EdgeInsets.symmetric(horizontal: 13),
-                decoration: BoxDecoration(
-                  color: Palette.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Palette.line),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.more_horiz_rounded, color: Palette.dim, size: 20),
-                    SizedBox(width: 7),
-                    Text(
-                      'More',
-                      style: TextStyle(
-                        color: Palette.text,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _MoreMenu(onSelected: _handleMore),
           ] else ...[
             IconButton(
               tooltip: 'Evidence Locker',
@@ -352,55 +334,70 @@ class _AppHeader extends StatelessWidget {
               color: Palette.cyan,
               icon: const Icon(Icons.inventory_2_outlined),
             ),
-            PopupMenuButton<_MoreAction>(
-              tooltip: 'More',
-              onSelected: _handleMore,
-              color: Palette.surface,
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: _MoreAction.intelligence,
-                  child: _MoreItem(
-                    icon: Icons.radar_rounded,
-                    label: 'Threat intelligence',
-                  ),
-                ),
-                PopupMenuItem(
-                  value: _MoreAction.partner,
-                  child: _MoreItem(
-                    icon: Icons.business_center_outlined,
-                    label: 'Partner view',
-                  ),
-                ),
-                PopupMenuItem(
-                  value: _MoreAction.privacy,
-                  child: _MoreItem(
-                    icon: Icons.privacy_tip_outlined,
-                    label: 'Privacy & analysis',
-                  ),
-                ),
-                PopupMenuItem(
-                  value: _MoreAction.help,
-                  child: _MoreItem(
-                    icon: Icons.help_outline_rounded,
-                    label: 'Help',
-                  ),
-                ),
-              ],
-              icon: const Icon(Icons.more_horiz_rounded, color: Palette.dim),
-            ),
+            _MoreMenu(onSelected: _handleMore, compact: true),
+            const SizedBox(width: 4),
             FilledButton(
               onPressed: onEmergencyPressed,
               style: FilledButton.styleFrom(
                 backgroundColor: Palette.red,
                 foregroundColor: Colors.white,
-                minimumSize: const Size(48, 48),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                minimumSize: const Size(46, 46),
+                padding: const EdgeInsets.symmetric(horizontal: 11),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
               ),
               child: const Icon(Icons.emergency_rounded),
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+class _MoreMenu extends StatelessWidget {
+  final ValueChanged<_MoreAction> onSelected;
+  final bool compact;
+
+  const _MoreMenu({required this.onSelected, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_MoreAction>(
+      tooltip: 'More',
+      onSelected: onSelected,
+      color: Palette.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: Palette.line),
+      ),
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: _MoreAction.intelligence, child: _MoreItem(icon: Icons.radar_rounded, label: 'Threat intelligence')),
+        PopupMenuItem(value: _MoreAction.partner, child: _MoreItem(icon: Icons.business_center_outlined, label: 'Partner view')),
+        PopupMenuItem(value: _MoreAction.privacy, child: _MoreItem(icon: Icons.privacy_tip_outlined, label: 'Privacy & analysis')),
+        PopupMenuItem(value: _MoreAction.help, child: _MoreItem(icon: Icons.help_outline_rounded, label: 'Help')),
+      ],
+      child: compact
+          ? const Padding(
+              padding: EdgeInsets.all(10),
+              child: Icon(Icons.more_horiz_rounded, color: Palette.textSecondary),
+            )
+          : Container(
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 13),
+              decoration: BoxDecoration(
+                color: Palette.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Palette.line),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.more_horiz_rounded, color: Palette.textSecondary, size: 20),
+                  SizedBox(width: 7),
+                  Text('More', style: TextStyle(color: Palette.text, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -420,26 +417,23 @@ class _HeaderAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 6),
-      child: TextButton.icon(
+      child: TextButton(
         onPressed: onPressed,
-        icon: const SizedBox.shrink(),
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: Palette.cyan),
-            const SizedBox(width: 7),
-            Text(label),
-          ],
-        ),
         style: TextButton.styleFrom(
           foregroundColor: Palette.text,
           backgroundColor: Palette.surface,
           side: const BorderSide(color: Palette.line),
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
           minimumSize: const Size(48, 48),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: Palette.cyan),
+            const SizedBox(width: 7),
+            Text(label),
+          ],
         ),
       ),
     );
@@ -463,9 +457,7 @@ class _EmergencyAction extends StatelessWidget {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           minimumSize: const Size(48, 48),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       ),
     );
