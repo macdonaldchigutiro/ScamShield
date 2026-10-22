@@ -212,13 +212,13 @@ class _NavItem extends StatelessWidget {
               Icon(
                 icon,
                 size: 25,
-                color: selected ? Palette.cyan : Palette.textSecondary,
+                color: selected ? Palette.cyan : Palette.dim,
               ),
               const SizedBox(height: 5),
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? Palette.text : Palette.textSecondary,
+                  color: selected ? Palette.text : Palette.dim,
                   fontSize: 12,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 ),
@@ -274,7 +274,7 @@ class _AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      minHeight: desktop ? 88 : 76,
+      constraints: BoxConstraints(minHeight: desktop ? 88 : 76),
       padding: EdgeInsets.fromLTRB(desktop ? 26 : 16, 10, 12, 10),
       decoration: const BoxDecoration(
         color: Palette.bgTop,
@@ -305,7 +305,7 @@ class _AppHeader extends StatelessWidget {
                 const Text(
                   'Digital fraud defence',
                   style: TextStyle(
-                    color: Palette.textSecondary,
+                    color: Palette.dim,
                     fontSize: 12.5,
                     height: 1.0,
                   ),
@@ -379,7 +379,7 @@ class _MoreMenu extends StatelessWidget {
       child: compact
           ? const Padding(
               padding: EdgeInsets.all(10),
-              child: Icon(Icons.more_horiz_rounded, color: Palette.textSecondary),
+              child: Icon(Icons.more_horiz_rounded, color: Palette.dim),
             )
           : Container(
               constraints: const BoxConstraints(minHeight: 48),
@@ -392,7 +392,7 @@ class _MoreMenu extends StatelessWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.more_horiz_rounded, color: Palette.textSecondary, size: 20),
+                  Icon(Icons.more_horiz_rounded, color: Palette.dim, size: 20),
                   SizedBox(width: 7),
                   Text('More', style: TextStyle(color: Palette.text, fontWeight: FontWeight.w700)),
                 ],
