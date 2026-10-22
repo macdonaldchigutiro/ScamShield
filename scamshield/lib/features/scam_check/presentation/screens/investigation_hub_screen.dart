@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../../theme.dart';
 import 'media_investigator_screen.dart';
+import 'phishing_investigator_screen.dart';
 import 'scam_investigator_screen_v2.dart';
 
-/// Combines ScamShield's text/link/number investigator with screenshot/QR
-/// investigation behind one clear Check experience.
+/// Combines ScamShield's investigation tools behind one clear Check experience.
 class InvestigationHubScreen extends StatefulWidget {
   const InvestigationHubScreen({super.key});
 
@@ -33,7 +33,7 @@ class _InvestigationHubScreenState extends State<InvestigationHubScreen> {
               children: [
                 Expanded(
                   child: _ModeButton(
-                    label: 'Text / Link / Number',
+                    label: 'Message / Link / Number',
                     icon: Icons.manage_search_rounded,
                     selected: _mode == 0,
                     onTap: () => setState(() => _mode = 0),
@@ -48,6 +48,15 @@ class _InvestigationHubScreenState extends State<InvestigationHubScreen> {
                     onTap: () => setState(() => _mode = 1),
                   ),
                 ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: _ModeButton(
+                    label: 'Phishing email',
+                    icon: Icons.mark_email_unread_outlined,
+                    selected: _mode == 2,
+                    onTap: () => setState(() => _mode = 2),
+                  ),
+                ),
               ],
             ),
           ),
@@ -58,6 +67,7 @@ class _InvestigationHubScreenState extends State<InvestigationHubScreen> {
             children: const [
               ScamInvestigatorScreen(),
               MediaInvestigatorScreen(),
+              PhishingInvestigatorScreen(),
             ],
           ),
         ),
@@ -86,29 +96,29 @@ class _ModeButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 6),
         decoration: BoxDecoration(
           gradient: selected ? shieldGradient : null,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 17,
+              size: 18,
               color: selected ? Colors.white : Palette.dim,
             ),
-            const SizedBox(width: 7),
-            Flexible(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected ? Colors.white : Palette.dim,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: selected ? Colors.white : Palette.dim,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
