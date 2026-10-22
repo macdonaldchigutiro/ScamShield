@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/app_providers.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/incidents/presentation/screens/evidence_locker_screen.dart';
+import '../features/intelligence/presentation/screens/threat_intelligence_screen.dart';
 import '../features/privacy/presentation/screens/privacy_screen.dart';
 import '../features/protection/presentation/controllers/protection_controller.dart';
 import '../features/scam_check/presentation/screens/investigation_hub_screen.dart';
@@ -49,6 +50,12 @@ class AppShell extends ConsumerWidget {
       );
     }
 
+    void openIntelligence() {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ThreatIntelligenceScreen()),
+      );
+    }
+
     final pages = <Widget>[
       const HomeScreen(),
       const InvestigationHubScreen(),
@@ -72,6 +79,7 @@ class AppShell extends ConsumerWidget {
                   onEvidencePressed: openEvidence,
                   onPartnerPressed: openPartner,
                   onPrivacyPressed: openPrivacy,
+                  onIntelligencePressed: openIntelligence,
                   onEmergencyPressed: () => selectTab(3),
                   onHelpPressed: () => selectTab(3),
                 ),
@@ -201,6 +209,7 @@ class _AppHeader extends StatelessWidget {
   final VoidCallback onEvidencePressed;
   final VoidCallback onPartnerPressed;
   final VoidCallback onPrivacyPressed;
+  final VoidCallback onIntelligencePressed;
   final VoidCallback onEmergencyPressed;
   final VoidCallback onHelpPressed;
 
@@ -211,6 +220,7 @@ class _AppHeader extends StatelessWidget {
     required this.onEvidencePressed,
     required this.onPartnerPressed,
     required this.onPrivacyPressed,
+    required this.onIntelligencePressed,
     required this.onEmergencyPressed,
     required this.onHelpPressed,
   });
@@ -261,17 +271,23 @@ class _AppHeader extends StatelessWidget {
               color: Palette.cyan,
               onPressed: onEvidencePressed,
             ),
-            _HeaderAction(
-              icon: Icons.business_center_outlined,
-              label: 'Partners',
+            IconButton(
+              tooltip: 'Threat intelligence',
+              onPressed: onIntelligencePressed,
               color: Palette.violet,
-              onPressed: onPartnerPressed,
+              icon: const Icon(Icons.radar_rounded),
             ),
-            _HeaderAction(
-              icon: Icons.privacy_tip_outlined,
-              label: 'Privacy',
-              color: Palette.green,
+            IconButton(
+              tooltip: 'Partner view',
+              onPressed: onPartnerPressed,
+              color: Palette.violet,
+              icon: const Icon(Icons.business_center_outlined),
+            ),
+            IconButton(
+              tooltip: 'Privacy & analysis',
               onPressed: onPrivacyPressed,
+              color: Palette.green,
+              icon: const Icon(Icons.privacy_tip_outlined),
             ),
             _HeaderAction(
               icon: Icons.emergency_rounded,
@@ -287,6 +303,12 @@ class _AppHeader extends StatelessWidget {
               icon: const Icon(Icons.help_outline),
             ),
           ] else ...[
+            IconButton(
+              tooltip: 'Threat intelligence',
+              onPressed: onIntelligencePressed,
+              color: Palette.violet,
+              icon: const Icon(Icons.radar_rounded),
+            ),
             IconButton(
               tooltip: 'Privacy & analysis',
               onPressed: onPrivacyPressed,
