@@ -171,9 +171,9 @@ class RingPainter extends CustomPainter {
   final Color color;
   final double thickness;
 
-  const RingPainter({
-    required this.value,
-    required this.color,
+  const RingPainter(
+    this.value,
+    this.color, {
     this.thickness = 8,
   });
 
