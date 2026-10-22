@@ -98,7 +98,7 @@ class _PhishingInvestigatorScreenState
                       )
                     : const Icon(Icons.policy_outlined),
                 label: Text(state.isLoading
-                    ? 'INVESTIGATING…'
+                    ? 'INVESTIGATING...'
                     : 'INVESTIGATE EMAIL'),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(50),
@@ -363,7 +363,10 @@ class _ParsedEmail {
       findings.add('The From header does not contain a normal email address.');
     }
 
-    final urls = RegExp(r'https?://[^\s<>"\']+', caseSensitive: false)
+    final urls = RegExp(
+      r'''https?://[^\s<>"']+''',
+      caseSensitive: false,
+    )
         .allMatches(raw)
         .map((match) => match.group(0)!)
         .toSet()
