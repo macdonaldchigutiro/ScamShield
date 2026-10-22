@@ -11,11 +11,6 @@ import '../../../incidents/presentation/controllers/incident_controller.dart';
 import '../../../protection/presentation/controllers/protection_controller.dart';
 import '../../../scam_check/presentation/screens/media_investigator_screen.dart';
 
-/// Friendly, action-first Home screen.
-///
-/// The screen deliberately avoids invented threat statistics. Its personal
-/// status and recent activity are derived from persistent protection actions
-/// and real investigations stored in the Evidence Locker.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -28,10 +23,7 @@ class HomeScreen extends ConsumerWidget {
             backgroundColor: Palette.bg,
             foregroundColor: Palette.text,
             elevation: 0,
-            title: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
+            title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
           body: SafeArea(child: page),
         ),
@@ -63,16 +55,14 @@ class HomeScreen extends ConsumerWidget {
           onNumber: openCheck,
           onScreenshot: openScreenshot,
         );
-
         final protectionCard = _ProtectionCard(
           state: protection,
-          onOpenProtect: () {
-            ref.read(selectedHomeTabProvider.notifier).state = 2;
-          },
+          onOpenProtect: () =>
+              ref.read(selectedHomeTabProvider.notifier).state = 2,
         );
 
         return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(padding, 12, padding, 28),
+          padding: EdgeInsets.fromLTRB(padding, 16, padding, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -90,11 +80,11 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 18),
                 protectionCard,
               ],
-              const SizedBox(height: 22),
-              _PrivacyCard(),
-              const SizedBox(height: 22),
+              const SizedBox(height: 18),
+              const _PrivacyStrip(),
+              const SizedBox(height: 24),
               _RecentHeader(onEvidence: () => context.push('/evidence')),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               if (incidents.isLoading)
                 const _LoadingCard()
               else if (recent.isEmpty)
@@ -110,11 +100,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
               const SizedBox(height: 14),
               _EmergencyCard(
-                onTap: () => _open(
-                  context,
-                  const SosScreen(),
-                  'Emergency help',
-                ),
+                onTap: () => _open(context, const SosScreen(), 'Emergency help'),
               ),
             ],
           ),
@@ -139,100 +125,99 @@ class _CheckCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(24),
-      borderColor: Palette.cyan.withOpacity(.45),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Got a message that feels off?',
-            style: TextStyle(
-              color: Palette.text,
-              fontSize: 30,
-              height: 1.12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -.4,
-            ),
-          ),
-          const SizedBox(height: 9),
-          const Text(
-            'Check it before you click, reply, pay or share a code.',
-            style: TextStyle(
-              color: Palette.dim,
-              fontSize: 16,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Material(
-            color: Palette.surfaceHi,
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              onTap: onMessage,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 66),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Palette.line),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.content_paste_go_rounded, color: Palette.cyan),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Paste a message, link or number',
-                        style: TextStyle(color: Palette.dim, fontSize: 17),
-                      ),
-                    ),
-                    Icon(Icons.arrow_forward_rounded, color: Palette.cyan),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Or check something else',
-            style: TextStyle(
-              color: Palette.dim,
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 9,
-            runSpacing: 9,
+    return Stack(
+      children: [
+        GlassCard(
+          padding: const EdgeInsets.all(26),
+          borderColor: Palette.cyan.withOpacity(.5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _CheckChip(
-                icon: Icons.chat_bubble_outline_rounded,
-                label: 'Message',
-                onTap: onMessage,
+              const _AfricanAccent(width: 82),
+              const SizedBox(height: 14),
+              const Text(
+                'Got a message that feels off?',
+                style: TextStyle(
+                  color: Palette.text,
+                  fontSize: 30,
+                  height: 1.12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -.4,
+                ),
               ),
-              _CheckChip(
-                icon: Icons.link_rounded,
-                label: 'Link',
-                onTap: onLink,
+              const SizedBox(height: 9),
+              const Text(
+                'Check it before you click, reply, pay or share a code.',
+                style: TextStyle(
+                  color: Palette.textSecondary,
+                  fontSize: 16,
+                  height: 1.45,
+                ),
               ),
-              _CheckChip(
-                icon: Icons.phone_outlined,
-                label: 'Phone number',
-                onTap: onNumber,
+              const SizedBox(height: 20),
+              Material(
+                color: Palette.surfaceHi,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: onMessage,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 68),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Palette.cyan.withOpacity(.32)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.content_paste_go_rounded, color: Palette.cyan),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Paste a message, link or number',
+                            style: TextStyle(color: Palette.textSecondary, fontSize: 17),
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_rounded, color: Palette.cyan),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              _CheckChip(
-                icon: Icons.image_outlined,
-                label: 'Screenshot',
-                onTap: onScreenshot,
+              const SizedBox(height: 16),
+              const Text(
+                'Or check something else',
+                style: TextStyle(
+                  color: Palette.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 9,
+                runSpacing: 9,
+                children: [
+                  _CheckChip(icon: Icons.chat_bubble_outline_rounded, label: 'Message', onTap: onMessage),
+                  _CheckChip(icon: Icons.link_rounded, label: 'Link', onTap: onLink),
+                  _CheckChip(icon: Icons.phone_outlined, label: 'Phone number', onTap: onNumber),
+                  _CheckChip(icon: Icons.image_outlined, label: 'Screenshot', onTap: onScreenshot),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        ),
+        const Positioned(
+          right: 18,
+          top: 18,
+          child: IgnorePointer(
+            child: Opacity(
+              opacity: .055,
+              child: _AfricanPatternMark(size: 126),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -242,17 +227,13 @@ class _CheckChip extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _CheckChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  const _CheckChip({required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return ActionChip(
       onPressed: onTap,
-      avatar: Icon(icon, size: 19, color: Palette.text),
+      avatar: Icon(icon, size: 19, color: Palette.cyan),
       label: Text(
         label,
         style: const TextStyle(
@@ -273,10 +254,7 @@ class _ProtectionCard extends StatelessWidget {
   final ProtectionState state;
   final VoidCallback onOpenProtect;
 
-  const _ProtectionCard({
-    required this.state,
-    required this.onOpenProtect,
-  });
+  const _ProtectionCard({required this.state, required this.onOpenProtect});
 
   @override
   Widget build(BuildContext context) {
@@ -293,24 +271,32 @@ class _ProtectionCard extends StatelessWidget {
             : 'Build your protection';
 
     return GlassCard(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
+      borderColor: Palette.line,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'YOUR PROTECTION',
-            style: TextStyle(
-              color: Palette.dim,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.4,
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'YOUR PROTECTION',
+                  style: TextStyle(
+                    color: Palette.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+              ),
+              _AfricanAccent(width: 62, color: color),
+            ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           if (state.isLoading)
             const Center(
               child: Padding(
-                padding: EdgeInsets.all(26),
+                padding: EdgeInsets.all(28),
                 child: CircularProgressIndicator(color: Palette.cyan),
               ),
             )
@@ -318,23 +304,37 @@ class _ProtectionCard extends StatelessWidget {
             Row(
               children: [
                 SizedBox(
-                  width: 88,
-                  height: 88,
+                  width: 104,
+                  height: 104,
                   child: CustomPaint(
-                    painter: RingPainter(progress, color, thickness: 9),
+                    painter: RingPainter(progress, color, thickness: 10),
                     child: Center(
-                      child: Text(
-                        '${state.completedCount}/${state.totalCount}',
-                        style: const TextStyle(
-                          color: Palette.text,
-                          fontSize: 21,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${state.completedCount}/${state.totalCount}',
+                            style: const TextStyle(
+                              color: Palette.text,
+                              fontSize: 23,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'STEPS',
+                            style: TextStyle(
+                              color: Palette.muted,
+                              fontSize: 8,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 15),
+                const SizedBox(width: 17),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,17 +343,17 @@ class _ProtectionCard extends StatelessWidget {
                         label,
                         style: TextStyle(
                           color: color,
-                          fontSize: 20,
+                          fontSize: 21,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
-                        '${state.percentage}% based only on safety steps you have confirmed.',
+                        '${state.completedCount} of ${state.totalCount} safety steps completed',
                         style: const TextStyle(
-                          color: Palette.dim,
+                          color: Palette.textSecondary,
                           fontSize: 14,
-                          height: 1.4,
+                          height: 1.35,
                         ),
                       ),
                     ],
@@ -361,7 +361,7 @@ class _ProtectionCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             LinearProgressIndicator(
               value: progress,
               minHeight: 7,
@@ -369,20 +369,19 @@ class _ProtectionCard extends StatelessWidget {
               backgroundColor: Palette.line,
               borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 15),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
+              child: FilledButton.icon(
                 onPressed: onOpenProtect,
                 icon: const Icon(Icons.verified_user_outlined),
                 label: const Text('Improve my protection'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Palette.text,
-                  side: const BorderSide(color: Palette.line),
-                  minimumSize: const Size(48, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Palette.cyan.withOpacity(.16),
+                  foregroundColor: Palette.violet,
+                  side: BorderSide(color: Palette.cyan.withOpacity(.45)),
+                  minimumSize: const Size(48, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
@@ -393,37 +392,44 @@ class _ProtectionCard extends StatelessWidget {
   }
 }
 
-class _PrivacyCard extends StatelessWidget {
+class _PrivacyStrip extends StatelessWidget {
+  const _PrivacyStrip();
+
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: Palette.green.withOpacity(.045),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Palette.green.withOpacity(.24)),
+      ),
       child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lock_person_outlined, color: Palette.green, size: 28),
-          SizedBox(width: 12),
+          Icon(Icons.lock_person_outlined, color: Palette.green, size: 24),
+          SizedBox(width: 11),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Private by design',
-                  style: TextStyle(
-                    color: Palette.text,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+            child: Text.rich(
+              TextSpan(
+                style: TextStyle(
+                  color: Palette.textSecondary,
+                  fontSize: 13.5,
+                  height: 1.4,
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Your saved investigations and protection progress are stored locally on this device. ScamShield does not claim a message was uploaded unless a feature explicitly says it sends data elsewhere.',
-                  style: TextStyle(
-                    color: Palette.dim,
-                    fontSize: 14,
-                    height: 1.4,
+                children: [
+                  TextSpan(
+                    text: 'Private by design. ',
+                    style: TextStyle(
+                      color: Palette.text,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-              ],
+                  TextSpan(
+                    text: 'Saved investigations stay on this device unless you choose a feature that explicitly sends data elsewhere.',
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -434,7 +440,6 @@ class _PrivacyCard extends StatelessWidget {
 
 class _RecentHeader extends StatelessWidget {
   final VoidCallback onEvidence;
-
   const _RecentHeader({required this.onEvidence});
 
   @override
@@ -470,11 +475,7 @@ class _LoadingCard extends StatelessWidget {
     return const GlassCard(
       child: Row(
         children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
           SizedBox(width: 12),
           Text('Loading your investigations…'),
         ],
@@ -485,7 +486,6 @@ class _LoadingCard extends StatelessWidget {
 
 class _EmptyRecent extends StatelessWidget {
   final VoidCallback onStart;
-
   const _EmptyRecent({required this.onStart});
 
   @override
@@ -496,20 +496,12 @@ class _EmptyRecent extends StatelessWidget {
         children: [
           const Text(
             'Nothing saved yet',
-            style: TextStyle(
-              color: Palette.text,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-            ),
+            style: TextStyle(color: Palette.text, fontSize: 17, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           const Text(
             'Suspicious and high-risk checks are saved on this device so you can review them later or export a report.',
-            style: TextStyle(
-              color: Palette.dim,
-              fontSize: 14,
-              height: 1.4,
-            ),
+            style: TextStyle(color: Palette.textSecondary, fontSize: 14, height: 1.4),
           ),
           const SizedBox(height: 14),
           OutlinedButton(
@@ -529,7 +521,6 @@ class _EmptyRecent extends StatelessWidget {
 
 class _EmergencyCard extends StatelessWidget {
   final VoidCallback onTap;
-
   const _EmergencyCard({required this.onTap});
 
   @override
@@ -537,9 +528,9 @@ class _EmergencyCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Palette.red.withOpacity(.08),
+        color: Palette.red.withOpacity(.07),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Palette.red.withOpacity(.45)),
+        border: Border.all(color: Palette.red.withOpacity(.42)),
       ),
       child: Row(
         children: [
@@ -551,16 +542,12 @@ class _EmergencyCard extends StatelessWidget {
               children: [
                 Text(
                   'Already sent money, shared a code or lost an account?',
-                  style: TextStyle(
-                    color: Palette.text,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(color: Palette.text, fontSize: 16, fontWeight: FontWeight.w800),
                 ),
                 SizedBox(height: 3),
                 Text(
                   'Open the emergency recovery guide for step-by-step help.',
-                  style: TextStyle(color: Palette.dim, fontSize: 14),
+                  style: TextStyle(color: Palette.textSecondary, fontSize: 14),
                 ),
               ],
             ),
@@ -573,10 +560,7 @@ class _EmergencyCard extends StatelessWidget {
               foregroundColor: Colors.white,
               minimumSize: const Size(48, 48),
             ),
-            child: const Text(
-              "I've been scammed",
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
+            child: const Text("I've been scammed", style: TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -588,10 +572,7 @@ class _RecentInvestigationCard extends StatelessWidget {
   final IncidentRecord incident;
   final VoidCallback onTap;
 
-  const _RecentInvestigationCard({
-    required this.incident,
-    required this.onTap,
-  });
+  const _RecentInvestigationCard({required this.incident, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -609,7 +590,7 @@ class _RecentInvestigationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: GlassCard(
           padding: const EdgeInsets.all(14),
-          borderColor: color.withOpacity(.28),
+          borderColor: color.withOpacity(.25),
           child: Row(
             children: [
               Container(
@@ -617,7 +598,7 @@ class _RecentInvestigationCard extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
-                  color: color.withOpacity(.12),
+                  color: color.withOpacity(.11),
                 ),
                 child: Icon(_verdictIcon(incident.verdict), color: color),
               ),
@@ -639,36 +620,24 @@ class _RecentInvestigationCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Text(
-                          when,
-                          style: const TextStyle(
-                            color: Palette.dim,
-                            fontSize: 11,
-                          ),
-                        ),
+                        Text(when, style: const TextStyle(color: Palette.muted, fontSize: 11)),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      incident.content.isEmpty
-                          ? incident.sourceLabel
-                          : incident.content,
+                      incident.content.isEmpty ? incident.sourceLabel : incident.content,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Palette.dim,
-                        fontSize: 13,
-                        height: 1.35,
-                      ),
+                      style: const TextStyle(color: Palette.textSecondary, fontSize: 13, height: 1.35),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      incident.sourceLabel,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 7,
+                      runSpacing: 5,
+                      children: [
+                        _MiniBadge(label: incident.sourceLabel, color: Palette.cyan),
+                        _MiniBadge(label: _verdictLabel(incident.verdict), color: color),
+                      ],
                     ),
                   ],
                 ),
@@ -678,16 +647,9 @@ class _RecentInvestigationCard extends StatelessWidget {
                 children: [
                   Text(
                     '${incident.riskScore}',
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: TextStyle(color: color, fontSize: 21, fontWeight: FontWeight.w900),
                   ),
-                  const Text(
-                    'RISK',
-                    style: TextStyle(color: Palette.dim, fontSize: 9),
-                  ),
+                  const Text('RISK', style: TextStyle(color: Palette.muted, fontSize: 9)),
                 ],
               ),
             ],
@@ -696,6 +658,113 @@ class _RecentInvestigationCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MiniBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _MiniBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(.24)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontSize: 9.5, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+class _AfricanAccent extends StatelessWidget {
+  final double width;
+  final Color color;
+
+  const _AfricanAccent({this.width = 72, this.color = Palette.cyan});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: 10,
+      child: CustomPaint(painter: _AfricanAccentPainter(color)),
+    );
+  }
+}
+
+class _AfricanPatternMark extends StatelessWidget {
+  final double size;
+  const _AfricanPatternMark({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: CustomPaint(painter: _AfricanPatternPainter()),
+    );
+  }
+}
+
+class _AfricanAccentPainter extends CustomPainter {
+  final Color color;
+  const _AfricanAccentPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final segment = size.width / 6;
+    for (var i = 0; i < 6; i++) {
+      final left = i * segment;
+      final path = Path()
+        ..moveTo(left, size.height)
+        ..lineTo(left + segment / 2, 1)
+        ..lineTo(left + segment, size.height);
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _AfricanAccentPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+class _AfricanPatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Palette.cyan
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    const rows = 4;
+    const cols = 4;
+    final cellW = size.width / cols;
+    final cellH = size.height / rows;
+    for (var y = 0; y < rows; y++) {
+      for (var x = 0; x < cols; x++) {
+        final left = x * cellW;
+        final top = y * cellH;
+        final path = Path()
+          ..moveTo(left + cellW * .1, top + cellH * .8)
+          ..lineTo(left + cellW * .5, top + cellH * .15)
+          ..lineTo(left + cellW * .9, top + cellH * .8)
+          ..close();
+        canvas.drawPath(path, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 Color _verdictColor(InvestigationVerdict verdict) {
@@ -717,5 +786,16 @@ IconData _verdictIcon(InvestigationVerdict verdict) {
       return Icons.warning_amber_rounded;
     case InvestigationVerdict.lowRisk:
       return Icons.verified_user_rounded;
+  }
+}
+
+String _verdictLabel(InvestigationVerdict verdict) {
+  switch (verdict) {
+    case InvestigationVerdict.highRisk:
+      return 'High risk';
+    case InvestigationVerdict.suspicious:
+      return 'Suspicious';
+    case InvestigationVerdict.lowRisk:
+      return 'Low risk';
   }
 }
