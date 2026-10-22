@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/branding/scamshield_brand_logo.dart';
 import '../core/providers/app_providers.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/incidents/presentation/screens/evidence_locker_screen.dart';
@@ -240,18 +241,19 @@ class _AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(desktop ? 24 : 16, 14, 12, 12),
+      padding: EdgeInsets.fromLTRB(desktop ? 24 : 16, 10, 12, 10),
       decoration: const BoxDecoration(
         color: Palette.bgTop,
         border: Border(bottom: BorderSide(color: Palette.line)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.shield_rounded, color: Palette.cyan, size: 28),
-          const SizedBox(width: 10),
+          ScamShieldBrandLogo(size: desktop ? 58 : 50),
+          const SizedBox(width: 11),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'ScamShield',
