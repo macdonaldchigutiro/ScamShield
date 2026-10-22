@@ -1,23 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/sharing/share_intent_bridge.dart';
 import '../../../../theme.dart';
 import 'media_investigator_screen.dart';
 import 'phishing_investigator_screen.dart';
 import 'scam_investigator_screen_v2.dart';
+import 'shared_message_review_screen.dart';
 
 /// Combines ScamShield's investigation tools behind one clear Check experience.
-class InvestigationHubScreen extends StatefulWidget {
+class InvestigationHubScreen extends ConsumerStatefulWidget {
   const InvestigationHubScreen({super.key});
 
   @override
-  State<InvestigationHubScreen> createState() => _InvestigationHubScreenState();
+  ConsumerState<InvestigationHubScreen> createState() =>
+      _InvestigationHubScreenState();
 }
 
-class _InvestigationHubScreenState extends State<InvestigationHubScreen> {
+class _InvestigationHubScreenState
+    extends ConsumerState<InvestigationHubScreen> {
   int _mode = 0;
 
   @override
   Widget build(BuildContext context) {
+    final sharedText = ref.watch(sharedTextProvider);
+
+    if (sharedText != null && sharedText.trim().isNotEmpty) {
+      return SharedMessageReviewScreen(sharedText: sharedText);
+    }
+
     return Column(
       children: [
         Padding(
