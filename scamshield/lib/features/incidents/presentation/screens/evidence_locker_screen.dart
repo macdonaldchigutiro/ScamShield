@@ -11,10 +11,6 @@ import '../controllers/incident_controller.dart';
 
 enum _LockerFilter { all, actionRequired, reported, resolved }
 
-/// Main Evidence Locker view.
-///
-/// The locker is intentionally local-first. It gives users clear lifecycle
-/// controls, portable exports and an explicit way to remove sensitive evidence.
 class EvidenceLockerScreen extends ConsumerStatefulWidget {
   const EvidenceLockerScreen({super.key});
 
@@ -63,10 +59,9 @@ class _EvidenceLockerScreenState extends ConsumerState<EvidenceLockerScreen> {
                       children: [
                         _LockerSummary(
                           incidents: state.incidents,
-                          onExportAll: () =>
-                              _exportAll(context, state.incidents),
+                          onExportAll: () => _exportAll(context, state.incidents),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 18),
                         const Text(
                           'FIND AN INCIDENT',
                           style: TextStyle(
@@ -90,8 +85,7 @@ class _EvidenceLockerScreenState extends ConsumerState<EvidenceLockerScreen> {
                               ),
                               _FilterChip(
                                 label: 'Action required',
-                                selected:
-                                    _filter == _LockerFilter.actionRequired,
+                                selected: _filter == _LockerFilter.actionRequired,
                                 onSelected: () => setState(
                                   () => _filter = _LockerFilter.actionRequired,
                                 ),
@@ -113,7 +107,7 @@ class _EvidenceLockerScreenState extends ConsumerState<EvidenceLockerScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 16),
                         Row(
                           children: [
                             const Expanded(
@@ -130,7 +124,7 @@ class _EvidenceLockerScreenState extends ConsumerState<EvidenceLockerScreen> {
                             Text(
                               '${filtered.length} shown',
                               style: const TextStyle(
-                                color: Palette.dim,
+                                color: Palette.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
@@ -139,9 +133,15 @@ class _EvidenceLockerScreenState extends ConsumerState<EvidenceLockerScreen> {
                         const SizedBox(height: 8),
                         if (filtered.isEmpty)
                           const GlassCard(
-                            child: Text(
-                              'No incidents match this filter.',
-                              style: TextStyle(color: Palette.dim),
+                            child: Row(
+                              children: [
+                                Icon(Icons.filter_alt_off_outlined, color: Palette.muted),
+                                SizedBox(width: 10),
+                                Text(
+                                  'No incidents match this filter.',
+                                  style: TextStyle(color: Palette.textSecondary),
+                                ),
+                              ],
                             ),
                           )
                         else
@@ -203,8 +203,7 @@ class _EvidenceLockerScreenState extends ConsumerState<EvidenceLockerScreen> {
 
     if (confirmed != true || !mounted) return;
     try {
-      final fileName = await const IncidentBackupExportService()
-          .exportAll(incidents);
+      final fileName = await const IncidentBackupExportService().exportAll(incidents);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$fileName downloaded.')),
@@ -238,7 +237,12 @@ class _FilterChip extends StatelessWidget {
         onSelected: (_) => onSelected(),
         label: Text(label),
         showCheckmark: selected,
-        selectedColor: Palette.cyan.withOpacity(.18),
+        selectedColor: Palette.cyan.withOpacity(.15),
+        backgroundColor: Palette.surface,
+        labelStyle: TextStyle(
+          color: selected ? Palette.text : Palette.textSecondary,
+          fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+        ),
         side: BorderSide(
           color: selected ? Palette.cyan : Palette.line,
         ),
@@ -262,27 +266,45 @@ class _LockerSummary extends StatelessWidget {
         .where((item) => item.status == IncidentStatus.actionRequired)
         .length;
     final highRisk = incidents
-        .where((item) => item.verdict.name == 'highRisk')
+        .where((item) => item.verdict.name == 'highRisk' && item.riskScore > 0)
         .length;
 
     return GlassCard(
-      borderColor: Palette.violet.withOpacity(0.45),
+      borderColor: Palette.cyan.withOpacity(0.38),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.inventory_2_outlined, color: Palette.violet),
-              const SizedBox(width: 9),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Palette.cyan.withOpacity(.09),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: Palette.cyan.withOpacity(.25)),
+                ),
+                child: const Icon(Icons.inventory_2_outlined, color: Palette.cyan),
+              ),
+              const SizedBox(width: 11),
               const Expanded(
-                child: Text(
-                  'YOUR EVIDENCE LOCKER',
-                  style: TextStyle(
-                    color: Palette.violet,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.7,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Evidence Locker',
+                      style: TextStyle(
+                        color: Palette.text,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Saved investigations and recovery cases on this device.',
+                      style: TextStyle(color: Palette.textSecondary, fontSize: 12.5),
+                    ),
+                  ],
                 ),
               ),
               TextButton.icon(
@@ -292,12 +314,7 @@ class _LockerSummary extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 7),
-          const Text(
-            'Keep suspicious investigations together so you can act, report and explain what happened without rebuilding the story later.',
-            style: TextStyle(color: Palette.dim, fontSize: 12.5, height: 1.4),
-          ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 15),
           Row(
             children: [
               Expanded(
@@ -347,9 +364,9 @@ class _SummaryStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
+        color: color.withOpacity(0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withOpacity(0.22)),
       ),
       child: Column(
         children: [
@@ -366,7 +383,7 @@ class _SummaryStat extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Palette.dim,
+              color: Palette.textSecondary,
               fontSize: 8.5,
               letterSpacing: 1.1,
             ),
@@ -386,88 +403,154 @@ class _IncidentCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final color = _verdictColor(incident);
     final preview = _preview(incident.content);
+    final statusColor = _statusStyle(incident.status).$2;
 
-    return InkWell(
+    return Material(
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(20),
-      onTap: () => _showIncidentSheet(context, ref, incident),
-      child: GlassCard(
-        borderColor: color.withOpacity(0.34),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 54,
-              height: 54,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.11),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: color.withOpacity(0.4)),
-              ),
-              child: Text(
-                incident.riskScore == 0 ? 'CASE' : '${incident.riskScore}',
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w900,
-                  fontSize: incident.riskScore == 0 ? 10 : 18,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => _showIncidentSheet(context, ref, incident),
+        child: GlassCard(
+          padding: const EdgeInsets.all(15),
+          borderColor: color.withOpacity(0.3),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(color: color.withOpacity(0.34)),
                 ),
+                child: incident.riskScore == 0
+                    ? const Text(
+                        'CASE',
+                        style: TextStyle(
+                          color: Palette.cyan,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                          letterSpacing: .8,
+                        ),
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${incident.riskScore}',
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 19,
+                            ),
+                          ),
+                          const Text(
+                            'RISK',
+                            style: TextStyle(color: Palette.muted, fontSize: 8),
+                          ),
+                        ],
+                      ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          incident.category,
-                          style: const TextStyle(
-                            color: Palette.text,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            incident.category,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Palette.text,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
+                        const SizedBox(width: 10),
+                        Text(
+                          _friendlyDate(incident.createdAt),
+                          style: const TextStyle(
+                            color: Palette.muted,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (preview.isNotEmpty) ...[
+                      const SizedBox(height: 5),
                       Text(
-                        _friendlyDate(incident.createdAt),
+                        preview,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: Palette.dim,
-                          fontSize: 10.5,
+                          color: Palette.textSecondary,
+                          fontSize: 12.5,
+                          height: 1.35,
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    incident.sourceLabel,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Palette.dim, fontSize: 11),
-                  ),
-                  if (preview.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      preview,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Palette.text,
-                        fontSize: 12.5,
-                      ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 7,
+                      runSpacing: 6,
+                      children: [
+                        _MiniPill(label: incident.sourceLabel, color: Palette.cyan),
+                        if (incident.riskScore > 0)
+                          _MiniPill(
+                            label: _verdictLabel(incident),
+                            color: color,
+                          ),
+                        _MiniPill(
+                          label: _statusStyle(incident.status).$1,
+                          color: statusColor,
+                        ),
+                      ],
                     ),
                   ],
-                  const SizedBox(height: 8),
-                  _StatusPill(status: incident.status),
-                ],
+                ),
               ),
-            ),
-            const Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: Icon(Icons.chevron_right_rounded, color: Palette.dim),
-            ),
-          ],
+              const SizedBox(width: 8),
+              const Padding(
+                padding: EdgeInsets.only(top: 17),
+                child: Icon(Icons.chevron_right_rounded, color: Palette.muted),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniPill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _MiniPill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.08),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: color.withOpacity(.25)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -510,29 +593,32 @@ class _EmptyLocker extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
-        child: GlassCard(
-          borderColor: Palette.green.withOpacity(0.3),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.inventory_2_outlined, color: Palette.green, size: 42),
-              SizedBox(height: 12),
-              Text(
-                'Nothing in your Evidence Locker',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Palette.text,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: GlassCard(
+            borderColor: Palette.cyan.withOpacity(0.28),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.inventory_2_outlined, color: Palette.cyan, size: 44),
+                SizedBox(height: 12),
+                Text(
+                  'Your Evidence Locker is empty',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Palette.text,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              SizedBox(height: 7),
-              Text(
-                'Suspicious and high-risk investigations, plus recovery cases you save, will appear here.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Palette.dim, height: 1.4),
-              ),
-            ],
+                SizedBox(height: 7),
+                Text(
+                  'Suspicious and high-risk investigations, plus recovery cases you save, will appear here with their source, status and evidence preview.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Palette.textSecondary, height: 1.45),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -590,12 +676,11 @@ void _showIncidentSheet(
             maxChildSize: 0.97,
             expand: false,
             builder: (_, scrollController) {
+              final verdictColor = _verdictColor(incident);
               return Container(
                 decoration: const BoxDecoration(
                   color: Palette.bg,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(28),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                   border: Border(top: BorderSide(color: Palette.line)),
                 ),
                 child: ListView(
@@ -618,75 +703,109 @@ void _showIncidentSheet(
                           label: 'Close incident',
                           child: IconButton(
                             tooltip: 'Close incident',
-                            onPressed: () =>
-                                Navigator.of(sheetContext).pop(),
+                            onPressed: () => Navigator.of(sheetContext).pop(),
                             icon: const Icon(Icons.close_rounded),
                           ),
                         ),
                       ],
                     ),
-                    Text(
-                      incident.id,
-                      style: const TextStyle(
-                        color: Palette.cyan,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      incident.category,
-                      style: const TextStyle(
-                        color: Palette.text,
-                        fontSize: 23,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      'Saved ${_friendlyDate(incident.createdAt)}',
-                      style: const TextStyle(color: Palette.dim, fontSize: 12),
-                    ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 4),
                     GlassCard(
-                      borderColor: _verdictColor(incident).withOpacity(.4),
+                      padding: const EdgeInsets.all(16),
+                      borderColor: verdictColor.withOpacity(.38),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            incident.riskScore == 0
-                                ? 'CASE'
-                                : '${incident.riskScore}',
-                            style: TextStyle(
-                              color: _verdictColor(incident),
-                              fontSize: incident.riskScore == 0 ? 20 : 34,
-                              fontWeight: FontWeight.w900,
+                          Container(
+                            width: 72,
+                            height: 72,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: verdictColor.withOpacity(.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: verdictColor.withOpacity(.32)),
                             ),
+                            child: incident.riskScore == 0
+                                ? const Text(
+                                    'CASE',
+                                    style: TextStyle(
+                                      color: Palette.cyan,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1,
+                                    ),
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${incident.riskScore}',
+                                        style: TextStyle(
+                                          color: verdictColor,
+                                          fontSize: 25,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                      const Text(
+                                        'RISK / 100',
+                                        style: TextStyle(color: Palette.muted, fontSize: 7.5),
+                                      ),
+                                    ],
+                                  ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 14),
                           Expanded(
-                            child: Text(
-                              incident.riskScore == 0
-                                  ? 'USER-STARTED RECOVERY CASE\nNo automated risk score was assigned.'
-                                  : 'RISK SCORE / 100\nSaved from ScamShield analysis.',
-                              style: const TextStyle(
-                                color: Palette.dim,
-                                fontSize: 11,
-                                height: 1.4,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  incident.category,
+                                  style: const TextStyle(
+                                    color: Palette.text,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Wrap(
+                                  spacing: 7,
+                                  runSpacing: 6,
+                                  children: [
+                                    _MiniPill(label: incident.sourceLabel, color: Palette.cyan),
+                                    if (incident.riskScore > 0)
+                                      _MiniPill(label: _verdictLabel(incident), color: verdictColor),
+                                    _StatusPill(status: selectedStatus),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Saved ${_friendlyDate(incident.createdAt)}',
+                                  style: const TextStyle(
+                                    color: Palette.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Case ID: ${incident.id}',
+                      style: const TextStyle(
+                        color: Palette.muted,
+                        fontSize: 10.5,
+                        letterSpacing: .4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     const _SheetLabel('EVIDENCE / CONTENT'),
                     const SizedBox(height: 7),
                     GlassCard(
                       child: SelectableText(
-                        incident.content.isEmpty
-                            ? 'No text recorded.'
-                            : incident.content,
+                        incident.content.isEmpty ? 'No text recorded.' : incident.content,
                         style: const TextStyle(
                           color: Palette.text,
                           height: 1.45,
@@ -716,7 +835,7 @@ void _showIncidentSheet(
                                 Text(
                                   reason.explanation,
                                   style: const TextStyle(
-                                    color: Palette.dim,
+                                    color: Palette.textSecondary,
                                     fontSize: 12.5,
                                     height: 1.4,
                                   ),
@@ -734,10 +853,7 @@ void _showIncidentSheet(
                         children: [
                           TextField(
                             controller: amountController,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             decoration: const InputDecoration(
                               labelText: 'Amount lost / requested (optional)',
                             ),
@@ -745,8 +861,7 @@ void _showIncidentSheet(
                           TextField(
                             controller: referenceController,
                             decoration: const InputDecoration(
-                              labelText:
-                                  'Transaction / case reference (optional)',
+                              labelText: 'Transaction / case reference (optional)',
                             ),
                           ),
                           TextField(
@@ -773,9 +888,7 @@ void _showIncidentSheet(
                             selected: selectedStatus == status,
                             onPressed: () {
                               setSheetState(() => selectedStatus = status);
-                              ref
-                                  .read(incidentControllerProvider.notifier)
-                                  .updateIncident(
+                              ref.read(incidentControllerProvider.notifier).updateIncident(
                                     id: incident.id,
                                     status: status,
                                   );
@@ -786,17 +899,12 @@ void _showIncidentSheet(
                     const SizedBox(height: 18),
                     FilledButton.icon(
                       onPressed: () async {
-                        await ref
-                            .read(incidentControllerProvider.notifier)
-                            .updateIncident(
+                        await ref.read(incidentControllerProvider.notifier).updateIncident(
                               id: incident.id,
                               status: selectedStatus,
                               notes: notesController.text.trim(),
-                              amount: double.tryParse(
-                                amountController.text.trim(),
-                              ),
-                              transactionReference:
-                                  referenceController.text.trim(),
+                              amount: double.tryParse(amountController.text.trim()),
+                              transactionReference: referenceController.text.trim(),
                             );
                         if (sheetContext.mounted) {
                           ScaffoldMessenger.of(sheetContext).showSnackBar(
@@ -836,7 +944,7 @@ void _showIncidentSheet(
                         ),
                         subtitle: const Text(
                           'Creates a share-safe copy while keeping the integrity fingerprint for the original evidence.',
-                          style: TextStyle(color: Palette.dim, fontSize: 12),
+                          style: TextStyle(color: Palette.textSecondary, fontSize: 12),
                         ),
                       ),
                     ),
@@ -844,8 +952,7 @@ void _showIncidentSheet(
                     OutlinedButton.icon(
                       onPressed: () async {
                         try {
-                          final fileName =
-                              await const IncidentPdfExportService().export(
+                          final fileName = await const IncidentPdfExportService().export(
                             currentDraft(),
                             hidePhoneNumbers: hidePhoneNumbers,
                           );
@@ -862,8 +969,7 @@ void _showIncidentSheet(
                             ScaffoldMessenger.of(sheetContext).showSnackBar(
                               SnackBar(
                                 behavior: SnackBarBehavior.floating,
-                                content:
-                                    Text('Could not download report: $error'),
+                                content: Text('Could not download report: $error'),
                               ),
                             );
                           }
@@ -880,9 +986,7 @@ void _showIncidentSheet(
                     const SizedBox(height: 4),
                     TextButton.icon(
                       onPressed: () async {
-                        final report = const IncidentReportFormatter().format(
-                          currentDraft(),
-                        );
+                        final report = const IncidentReportFormatter().format(currentDraft());
                         await Clipboard.setData(ClipboardData(text: report));
                         if (sheetContext.mounted) {
                           ScaffoldMessenger.of(sheetContext).showSnackBar(
@@ -908,13 +1012,11 @@ void _showIncidentSheet(
                             ),
                             actions: [
                               TextButton(
-                                onPressed: () =>
-                                    Navigator.of(dialogContext).pop(false),
+                                onPressed: () => Navigator.of(dialogContext).pop(false),
                                 child: const Text('Cancel'),
                               ),
                               FilledButton(
-                                onPressed: () =>
-                                    Navigator.of(dialogContext).pop(true),
+                                onPressed: () => Navigator.of(dialogContext).pop(true),
                                 style: FilledButton.styleFrom(
                                   backgroundColor: Palette.red,
                                   foregroundColor: Colors.white,
@@ -925,17 +1027,12 @@ void _showIncidentSheet(
                           ),
                         );
                         if (confirmed != true) return;
-                        await ref
-                            .read(incidentControllerProvider.notifier)
-                            .deleteIncident(incident.id);
+                        await ref.read(incidentControllerProvider.notifier).deleteIncident(incident.id);
                         if (sheetContext.mounted) {
                           Navigator.of(sheetContext).pop();
                         }
                       },
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: Palette.red,
-                      ),
+                      icon: const Icon(Icons.delete_outline, color: Palette.red),
                       label: const Text(
                         'Delete incident',
                         style: TextStyle(color: Palette.red),
@@ -1028,6 +1125,18 @@ Color _verdictColor(IncidentRecord incident) {
       return Palette.amber;
     default:
       return Palette.green;
+  }
+}
+
+String _verdictLabel(IncidentRecord incident) {
+  if (incident.riskScore == 0) return 'CASE';
+  switch (incident.verdict.name) {
+    case 'highRisk':
+      return 'HIGH RISK';
+    case 'suspicious':
+      return 'SUSPICIOUS';
+    default:
+      return 'LOW RISK';
   }
 }
 
