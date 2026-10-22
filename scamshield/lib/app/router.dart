@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/providers/app_providers.dart';
-import '../features/incidents/presentation/screens/evidence_locker_screen.dart';
+import '../features/incidents/presentation/screens/evidence_locker_entry_screen.dart';
 import '../partner_screen.dart';
 import 'app_shell.dart';
 
@@ -23,7 +23,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/evidence',
         name: 'evidence',
-        builder: (context, state) => const EvidenceLockerScreen(),
+        builder: (context, state) => const EvidenceLockerEntryScreen(),
       ),
       GoRoute(
         path: '/partner',
