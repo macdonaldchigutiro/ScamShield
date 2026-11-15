@@ -240,7 +240,7 @@ class _ScamResult extends StatelessWidget {
     };
 
     return GlassCard(
-      borderColor: color.withOpacity(.55),
+      borderColor: color.withValues(alpha: .55),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -251,7 +251,7 @@ class _ScamResult extends StatelessWidget {
                 height: 56,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(.12),
+                  color: color.withValues(alpha: .12),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
