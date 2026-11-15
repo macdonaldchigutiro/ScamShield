@@ -27,7 +27,7 @@ class AppTheme {
       dividerColor: Palette.line,
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Palette.surface,
-        indicatorColor: Palette.cyan.withOpacity(.16),
+        indicatorColor: Palette.cyan.withValues(alpha: .16),
         labelTextStyle: const WidgetStatePropertyAll(
           TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
