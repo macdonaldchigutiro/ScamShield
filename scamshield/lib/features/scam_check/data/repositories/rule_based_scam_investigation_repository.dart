@@ -1,6 +1,6 @@
 import '../../../../analyzer.dart' as legacy;
-import '../../../../sim.dart';
 import '../../domain/entities/scam_investigation.dart';
+import 'contextual_scam_signals.dart';
 import '../../domain/repositories/scam_investigation_repository.dart';
 import '../../domain/services/phone_intelligence_service.dart';
 
@@ -13,14 +13,11 @@ import '../../domain/services/phone_intelligence_service.dart';
 class RuleBasedScamInvestigationRepository
     implements ScamInvestigationRepository {
   final PhoneIntelligenceService _phoneIntelligence;
-  final ThreatSim? _prototypeThreatData;
 
   const RuleBasedScamInvestigationRepository({
     PhoneIntelligenceService phoneIntelligence =
         const PhoneIntelligenceService(),
-    ThreatSim? prototypeThreatData,
-  })  : _phoneIntelligence = phoneIntelligence,
-        _prototypeThreatData = prototypeThreatData;
+  }) : _phoneIntelligence = phoneIntelligence;
 
   @override
   Future<ScamInvestigation> investigate({
@@ -35,16 +32,10 @@ class RuleBasedScamInvestigationRepository
       channel: _toLegacyChannel(channel),
     );
 
-    var phones = _phoneIntelligence.inspect(
+    final phones = _phoneIntelligence.inspect(
       content,
       directNumberCheck: inputType == InvestigationInputType.phoneNumber,
     );
-
-    // During the prototype, Partner View already maintains a simulated list of
-    // repeatedly flagged scam numbers. Reuse that exact data here so the app is
-    // internally consistent. The source remains explicitly labelled SAMPLE DATA
-    // and must be replaced by a real reputation repository before production.
-    phones = [for (final phone in phones) _enrichFromPrototypeReputation(phone)];
 
     // Start with the transparent legacy-rule score, then add context-aware
     // boosts when several warning signs appear together. A request for money
@@ -72,25 +63,17 @@ class RuleBasedScamInvestigationRepository
       caseSensitive: false,
     ).hasMatch(normalized);
 
+    final contextual = inputType == InvestigationInputType.phoneNumber
+        ? const <ContextualScamSignal>[]
+        : contextualScamSignals(content);
+
     var adjustedScore = analysis.score;
     if (hasMoneyRequest) adjustedScore += 15;
     if (hasSecrecy) adjustedScore += 10;
     if (hasFamilyImpersonation && hasMoneyRequest) adjustedScore += 15;
     if (hasUrgency && hasMoneyRequest) adjustedScore += 8;
-
-    final highestReputationReports = phones
-        .map((phone) => phone.reportCount)
-        .fold<int>(0, (highest, value) => value > highest ? value : highest);
-
-    // Repeated reputation reports are concrete evidence within the prototype.
-    // Keep the thresholds simple and transparent so we can later replace them
-    // with calibrated production scoring.
-    if (highestReputationReports >= 8) {
-      adjustedScore = adjustedScore < 85 ? 85 : adjustedScore;
-    } else if (highestReputationReports >= 3) {
-      adjustedScore = adjustedScore < 65 ? 65 : adjustedScore;
-    } else if (highestReputationReports > 0) {
-      adjustedScore = adjustedScore < 40 ? 40 : adjustedScore;
+    for (final signal in contextual) {
+      adjustedScore += signal.scoreBoost;
     }
 
     // A number-only lookup is neutral unless ScamShield has actual evidence.
@@ -100,22 +83,16 @@ class RuleBasedScamInvestigationRepository
           .map((phone) => (phone.risk * 100).round())
           .fold<int>(0, (highest, value) => value > highest ? value : highest);
 
-      // Ignore text-rule noise caused by a bare phone number. Only concrete
-      // number intelligence or actual reputation reports influence the score.
-      if (highestReputationReports >= 8) {
-        adjustedScore = 85;
-      } else if (highestReputationReports >= 3) {
-        adjustedScore = 65;
-      } else if (highestReputationReports > 0) {
-        adjustedScore = 40;
-      } else {
-        adjustedScore = phoneRisk;
-      }
+      // No sample reports are promoted to real consumer evidence.
+      // Only concrete on-device number information affects this score.
+      adjustedScore = phoneRisk;
     }
 
     adjustedScore = adjustedScore.clamp(0, 100);
 
-    final reasons = <InvestigationReason>[];
+    final reasons = <InvestigationReason>[
+      for (final signal in contextual) signal.toReason(),
+    ];
 
     // Bare phone-number checks should not inherit unrelated wording rules from
     // the legacy text analyzer. Message/screenshot checks still use them all.
@@ -174,25 +151,15 @@ class RuleBasedScamInvestigationRepository
       ));
     }
 
-    for (final phone in phones.where((phone) => phone.reportCount > 0)) {
-      reasons.add(InvestigationReason(
-        title: 'Number has ${phone.reportCount} prototype scam reports',
-        explanation:
-            '${phone.normalized} appears in Partner View sample data as ${phone.reportedCategory ?? 'a reported scam number'}. This is simulated prototype reputation, not a live public database.',
-        severity: phone.reportCount >= 8 ? 0.75 : 0.55,
-      ));
-    }
-
-    if (inputType == InvestigationInputType.phoneNumber &&
-        highestReputationReports == 0) {
+    if (inputType == InvestigationInputType.phoneNumber) {
       final hasConcreteWarning = phones.any((phone) => phone.risk > 0);
       reasons.add(InvestigationReason(
         title: hasConcreteWarning
             ? 'Local number warning found'
             : 'No negative evidence found locally',
         explanation: hasConcreteWarning
-            ? 'ScamShield found a concrete number-range or formatting concern. This is not the same as a verified scam report.'
-            : 'The number format itself did not show a known local warning and it is not in the current prototype report list. This still does not prove the caller is trustworthy.',
+            ? 'ScamShield found a local formatting or number-range concern. This is not a verified scam report.'
+            : 'No local warning was found. ScamShield has not verified this number as trustworthy or checked a live reputation database.',
         severity: hasConcreteWarning ? 0.18 : 0.0,
       ));
     }
@@ -205,23 +172,23 @@ class RuleBasedScamInvestigationRepository
             ? InvestigationVerdict.suspicious
             : InvestigationVerdict.lowRisk;
 
-    final reportedPhone = phones.where((phone) => phone.reportCount > 0).firstOrNull;
     // A legacy "no signs" category must never contradict a suspicious
     // or high-risk verdict derived from additional transparent rules.
     final legacyNoSigns = analysis.type.toLowerCase().contains('no scam signs') ||
         analysis.type.toLowerCase().contains('no suspicious');
     final category = inputType == InvestigationInputType.phoneNumber
-        ? reportedPhone?.reportedCategory ??
-            (adjustedScore == 0
-                ? 'No negative evidence found'
-                : 'Phone number intelligence')
-        : hasFamilyImpersonation && hasMoneyRequest
-            ? 'Family impersonation'
-            : verdict != InvestigationVerdict.lowRisk && legacyNoSigns
-                ? (hasMoneyRequest
-                    ? 'Unverified money request'
-                    : 'Suspicious message')
-                : analysis.type;
+        ? (adjustedScore == 0
+            ? 'No negative evidence found'
+            : 'Phone number intelligence')
+        : contextual.isNotEmpty
+            ? contextual.first.category
+            : hasFamilyImpersonation && hasMoneyRequest
+                ? 'Family impersonation'
+                : verdict != InvestigationVerdict.lowRisk && legacyNoSigns
+                    ? (hasMoneyRequest
+                        ? 'Unverified money request'
+                        : 'Suspicious message')
+                    : analysis.type;
 
     final actions = inputType == InvestigationInputType.phoneNumber
         ? const [
@@ -229,7 +196,15 @@ class RuleBasedScamInvestigationRepository
             'If the caller claims to be a bank, company or relative, end the call and contact them using a number you find independently.',
             'If the number appeared in a suspicious message, scan the full message or screenshot too so ScamShield can assess the context.',
           ]
-        : analysis.advice;
+        : [
+            for (final signal in contextual) signal.action,
+            if (verdict != InvestigationVerdict.lowRisk &&
+                analysis.verdict == legacy.Verdict.safe) ...const [
+              'Do not send money, share codes or use links until you independently verify the sender.',
+              'Contact the person or organisation through a trusted existing number or official app.',
+            ] else
+              ...analysis.advice,
+          ];
 
     return ScamInvestigation(
       riskScore: adjustedScore,
@@ -259,28 +234,6 @@ class RuleBasedScamInvestigationRepository
     );
   }
 
-  InvestigationPhoneNumber _enrichFromPrototypeReputation(
-    InvestigationPhoneNumber phone,
-  ) {
-    final sim = _prototypeThreatData;
-    if (sim == null) return phone;
-
-    final wanted = _digitsOnly(phone.normalized);
-    for (final entry in sim.senderCounts.entries) {
-      if (_digitsOnly(entry.key) != wanted) continue;
-
-      return phone.copyWith(
-        reputationAvailable: true,
-        reportCount: entry.value,
-        reportedCategory: sim.senderType[entry.key],
-        reputationSource: 'Partner View sample data',
-      );
-    }
-    return phone;
-  }
-
-  String _digitsOnly(String value) => value.replaceAll(RegExp(r'\D'), '');
-
   legacy.Channel _toLegacyChannel(InvestigationChannel channel) {
     switch (channel) {
       case InvestigationChannel.sms:
@@ -299,10 +252,3 @@ class RuleBasedScamInvestigationRepository
   }
 }
 
-extension _FirstOrNull<T> on Iterable<T> {
-  T? get firstOrNull {
-    final iterator = this.iterator;
-    if (!iterator.moveNext()) return null;
-    return iterator.current;
-  }
-}
