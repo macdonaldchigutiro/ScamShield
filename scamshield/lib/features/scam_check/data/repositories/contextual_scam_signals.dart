@@ -96,7 +96,11 @@ List<ContextualScamSignal> contextualScamSignals(String text) {
       r'\b(love you|my darling|sweetheart|babe|baby|my love|relationship|marry you|romantic)\b');
   final financialRequest = _has(input,
       r'\b(send|transfer|wire|lend|loan|pay|deposit|help me with)\b.{0,80}(?:\b(money|cash|funds|ticket|hospital|emergency|crypto|gift card|fee)\b|[£\$€]\s?\d+)');
-  if (relationship && financialRequest) {
+  // Ordinary requests between partners are not sufficient to label romance
+  // fraud. Look for an online/remote relationship or secrecy/emergency pressure.
+  final remoteOrPressure = _has(input,
+      r'\b(online|dating app|never met|long distance|overseas|abroad|don\'t tell|do not tell|keep (this|it) secret|urgent|emergency)\b');
+  if (relationship && financialRequest && remoteOrPressure) {
     result.add(const ContextualScamSignal(
       category: 'Romance-related money request',
       title: 'Romantic language combined with a money request',
