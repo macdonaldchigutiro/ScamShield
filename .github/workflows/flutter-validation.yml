@@ -1,0 +1,29 @@
+name: ScamShield Flutter validation
+
+on:
+  push:
+    branches: [upgrade/home-dashboard-v1]
+  pull_request:
+    paths:
+      - 'scamshield/**'
+      - '.github/workflows/flutter-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scamshield
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Flutter dependencies
+        run: flutter pub get
+      - name: Static analysis
+        run: flutter analyze
+      - name: Automated tests
+        run: flutter test --reporter expanded
