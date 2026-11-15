@@ -45,7 +45,7 @@ class ThreatIntelligenceScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
                 children: [
                   GlassCard(
-                    borderColor: Palette.violet.withOpacity(.45),
+                    borderColor: Palette.violet.withValues(alpha: .45),
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -160,9 +160,9 @@ class ThreatIntelligenceScreen extends ConsumerWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: stages[i].$3.withOpacity(.11),
+                    color: stages[i].$3.withValues(alpha: .11),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: stages[i].$3.withOpacity(.35)),
+                    border: Border.all(color: stages[i].$3.withValues(alpha: .35)),
                   ),
                   child: Icon(stages[i].$4, color: stages[i].$3, size: 20),
                 ),
@@ -206,7 +206,7 @@ class ThreatIntelligenceScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(.32)),
+        border: Border.all(color: color.withValues(alpha: .32)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,9 +277,9 @@ class ThreatIntelligenceScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Palette.cyan.withOpacity(.10),
+                        color: Palette.cyan.withValues(alpha: .10),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Palette.cyan.withOpacity(.28)),
+                        border: Border.all(color: Palette.cyan.withValues(alpha: .28)),
                       ),
                       child: Text(
                         '${entry.value}',
