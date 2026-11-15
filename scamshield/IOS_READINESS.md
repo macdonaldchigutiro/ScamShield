@@ -43,3 +43,40 @@ Do not add hard-coded Team IDs, signing certificates, App Group names or Bundle 
 ## Android without a physical Android phone
 
 On Windows, Android Studio's emulator can validate Android installation, share intents and screen behaviour. It cannot replace final testing on a physical phone (especially third-party app sharing). Follow https://docs.flutter.dev/platform-integration/android/setup.
+
+## 2026 mobile-readiness checks added to the development branch
+
+- Automated Flutter static analysis and unit/widget tests: see
+  `.github/workflows/flutter-validation.yml`.
+- Narrow phone viewport coverage: `test/mobile_shared_review_test.dart`
+  tests an editable shared-message review at 375 × 812 logical pixels. This
+  single widget test is not a substitute for testing all screens at Dynamic Type.
+- OCR dependency evaluation: `OCR_MIGRATION_REVIEW.md`. The current plugin
+  is discontinued; do not assume screenshot OCR works on iPhone yet.
+- The repository intentionally does not contain `scamshield/ios/Runner.xcodeproj`.
+  Existing `ios` files on the Windows machine are not an established,
+  verified native iOS baseline. Use `bash tool/prepare_ios.sh` on the Mac.
+
+## Before adding the iOS Share Extension
+
+1. Build, sign and launch the Flutter runner on the user's own iPhone.
+2. In Xcode, create a **Share Extension** target. Enable it for plain text and
+   URLs, with only the minimal activation rules needed.
+3. Use an App Group entitled in both targets; store only a user-initiated
+   payload, with bounded size and secure storage/lifetime. Avoid logging
+   message contents, links or OTPs.
+4. Follow Apple's supported extension-to-app handoff model: the containing
+   app may not be opened automatically by the extension. A self-contained
+   extension review screen or explicit open-app instructions are valid fallbacks.
+5. Implement native iOS handoff to the existing `scamshield/share` Flutter
+   method channel, handling both cold-start retrieval and live arrival, without
+   silently overwriting a newer payload.
+6. Confirm the Flutter review screen defaults to 'Other', allows editing, and
+   requires the user to tap Investigate. Do not analyse or upload on receipt.
+7. Verify sharing from Safari, Messages and a compatible third-party app
+   on a physical iPhone; test cancellation, duplicate arrivals, long text,
+   offline operation and permissions.
+
+**Status:** The native iOS extension, App Group and signed runner are NOT
+implemented or validated in this branch. No Team ID, Bundle ID or App Group
+identifier should be invented in source control.
