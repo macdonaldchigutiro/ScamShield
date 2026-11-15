@@ -146,7 +146,7 @@ class RuleBasedScamInvestigationRepository
             ? 'Phone number found in the content'
             : '${phones.length} phone numbers found in the content',
         explanation:
-            'ScamShield extracted the number${phones.length == 1 ? '' : 's'} so its reputation can be assessed alongside the message wording.',
+            'ScamShield extracted the number${phones.length == 1 ? '' : 's'} for review. No live reputation lookup is available in this local check.',
         severity: adjustedScore >= 60 ? 0.25 : 0.08,
       ));
     }
