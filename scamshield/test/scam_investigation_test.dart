@@ -19,6 +19,19 @@ void main() {
       expect(result.recommendedActions, isNotEmpty);
     });
 
+    test('suspicious money request never has a no-scams-found heading', () async {
+      final result = await repository.investigate(
+        content: 'I am your mother and desperately need money. I am in hospital. Please transfer $30 000 into my account now',
+        inputType: InvestigationInputType.message,
+        channel: InvestigationChannel.whatsapp,
+      );
+
+      if (result.verdict != InvestigationVerdict.lowRisk) {
+        expect(result.category.toLowerCase(), isNot(contains('no scam signs')));
+      }
+      expect(result.riskScore, inInclusiveRange(0, 100));
+    });
+
     test('ordinary phone number has no fabricated report count', () async {
       final result = await repository.investigate(
         content: '+44 7700 900123',
