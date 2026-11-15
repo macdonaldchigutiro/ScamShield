@@ -24,7 +24,7 @@ class SharedMessageReviewScreen extends ConsumerStatefulWidget {
 class _SharedMessageReviewScreenState
     extends ConsumerState<SharedMessageReviewScreen> {
   late final TextEditingController _controller;
-  InvestigationChannel _channel = InvestigationChannel.whatsapp;
+  InvestigationChannel _channel = InvestigationChannel.other;
   String _checkedText = '';
 
   @override
@@ -32,8 +32,22 @@ class _SharedMessageReviewScreenState
     super.initState();
     _controller = TextEditingController(text: widget.sharedText);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref.read(scamInvestigatorControllerProvider.notifier).clear();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant SharedMessageReviewScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sharedText == widget.sharedText) return;
+    // A new share can arrive while this screen is already visible.
+    // Replace the previous draft and result without silently analysing it.
+    _controller.text = widget.sharedText;
+    _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+    _checkedText = '';
+    _channel = InvestigationChannel.other;
+    ref.read(scamInvestigatorControllerProvider.notifier).clear();
   }
 
   @override
