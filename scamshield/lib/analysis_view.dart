@@ -127,7 +127,7 @@ class AnalysisView extends StatelessWidget {
           style: TextStyle(
             color: c,
             fontWeight: FontWeight.w700,
-            backgroundColor: c.withOpacity(0.16),
+            backgroundColor: c.withValues(alpha: 0.16),
           ),
         ));
       }
@@ -152,7 +152,7 @@ class AnalysisView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GlassCard(
-          borderColor: color.withOpacity(0.6),
+          borderColor: color.withValues(alpha: 0.6),
           child: Row(
             children: [
               SizedBox(
@@ -291,7 +291,7 @@ class AnalysisView extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: GlassCard(
-                borderColor: l.risk > 0 ? Palette.red.withOpacity(0.5) : null,
+                borderColor: l.risk > 0 ? Palette.red.withValues(alpha: 0.5) : null,
                 child: Row(
                   children: [
                     Icon(l.risk > 0 ? Icons.link_off : Icons.link,
@@ -384,7 +384,7 @@ class AnalysisView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Palette.red.withOpacity(0.7)),
+                border: Border.all(color: Palette.red.withValues(alpha: 0.7)),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
