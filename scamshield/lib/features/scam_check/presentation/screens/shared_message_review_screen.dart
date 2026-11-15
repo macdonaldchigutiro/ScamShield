@@ -82,7 +82,7 @@ class _SharedMessageReviewScreenState
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       children: [
         GlassCard(
-          borderColor: Palette.cyan.withOpacity(.42),
+          borderColor: Palette.cyan.withValues(alpha: .42),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -90,9 +90,9 @@ class _SharedMessageReviewScreenState
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Palette.cyan.withOpacity(.1),
+                  color: Palette.cyan.withValues(alpha: .1),
                   borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Palette.cyan.withOpacity(.3)),
+                  border: Border.all(color: Palette.cyan.withValues(alpha: .3)),
                 ),
                 child: const Icon(Icons.share_rounded, color: Palette.cyan),
               ),
@@ -149,7 +149,7 @@ class _SharedMessageReviewScreenState
                 selected: _channel == channel,
                 onSelected: (_) => setState(() => _channel = channel),
                 label: Text(_channelLabel(channel)),
-                selectedColor: Palette.cyan.withOpacity(.18),
+                selectedColor: Palette.cyan.withValues(alpha: .18),
                 backgroundColor: Palette.surface,
                 side: BorderSide(
                   color: _channel == channel ? Palette.cyan : Palette.line,
@@ -233,7 +233,7 @@ class _SharedResult extends StatelessWidget {
     };
 
     return GlassCard(
-      borderColor: color.withOpacity(.48),
+      borderColor: color.withValues(alpha: .48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -244,9 +244,9 @@ class _SharedResult extends StatelessWidget {
                 height: 68,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(.1),
+                  color: color.withValues(alpha: .1),
                   shape: BoxShape.circle,
-                  border: Border.all(color: color.withOpacity(.38), width: 2),
+                  border: Border.all(color: color.withValues(alpha: .38), width: 2),
                 ),
                 child: Text(
                   '${result.riskScore}',
