@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/privacy/cloud_analysis_consent_controller.dart';
-import '../../../../core/providers/app_providers.dart';
 import '../../../incidents/presentation/controllers/incident_controller.dart';
 import '../../data/repositories/cloud_scam_investigation_repository.dart';
 import '../../data/repositories/hybrid_scam_investigation_repository.dart';
@@ -17,9 +16,7 @@ const _cloudAnalysisEndpoint = String.fromEnvironment(
 
 final scamInvestigationRepositoryProvider =
     Provider<ScamInvestigationRepository>((ref) {
-  final local = RuleBasedScamInvestigationRepository(
-    prototypeThreatData: ref.watch(threatSimProvider),
-  );
+  final local = const RuleBasedScamInvestigationRepository();
   final cloud = CloudScamInvestigationRepository(
     endpoint: _cloudAnalysisEndpoint,
   );
