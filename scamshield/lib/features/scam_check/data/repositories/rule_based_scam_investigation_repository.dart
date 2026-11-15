@@ -206,6 +206,10 @@ class RuleBasedScamInvestigationRepository
             : InvestigationVerdict.lowRisk;
 
     final reportedPhone = phones.where((phone) => phone.reportCount > 0).firstOrNull;
+    // A legacy "no signs" category must never contradict a suspicious
+    // or high-risk verdict derived from additional transparent rules.
+    final legacyNoSigns = analysis.type.toLowerCase().contains('no scam signs') ||
+        analysis.type.toLowerCase().contains('no suspicious');
     final category = inputType == InvestigationInputType.phoneNumber
         ? reportedPhone?.reportedCategory ??
             (adjustedScore == 0
@@ -213,7 +217,11 @@ class RuleBasedScamInvestigationRepository
                 : 'Phone number intelligence')
         : hasFamilyImpersonation && hasMoneyRequest
             ? 'Family impersonation'
-            : analysis.type;
+            : verdict != InvestigationVerdict.lowRisk && legacyNoSigns
+                ? (hasMoneyRequest
+                    ? 'Unverified money request'
+                    : 'Suspicious message')
+                : analysis.type;
 
     final actions = inputType == InvestigationInputType.phoneNumber
         ? const [
