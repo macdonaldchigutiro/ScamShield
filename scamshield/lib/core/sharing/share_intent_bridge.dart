@@ -18,6 +18,7 @@ final shareIntentBridgeProvider = Provider<ShareIntentBridge>((ref) {
 class ShareIntentBridge {
   static const _channel = MethodChannel('scamshield/share');
   final Ref _ref;
+  bool _receivedLiveShare = false;
 
   ShareIntentBridge(this._ref) {
     _channel.setMethodCallHandler(_handleNativeCall);
@@ -27,9 +28,9 @@ class ShareIntentBridge {
   Future<void> _loadInitialShare() async {
     try {
       final text = await _channel.invokeMethod<String>('getInitialSharedText');
-      _accept(text);
+      if (!_receivedLiveShare) _accept(text);
     } on MissingPluginException {
-      // Expected on platforms that do not implement Android sharing.
+      // Expected on web/iOS until a native sharing integration is configured.
     } on PlatformException {
       // Sharing must never prevent ScamShield from starting.
     }
@@ -37,7 +38,9 @@ class ShareIntentBridge {
 
   Future<void> _handleNativeCall(MethodCall call) async {
     if (call.method == 'sharedText') {
-      _accept(call.arguments as String?);
+      _receivedLiveShare = true;
+      final payload = call.arguments;
+      if (payload is String) _accept(payload);
     }
   }
 
