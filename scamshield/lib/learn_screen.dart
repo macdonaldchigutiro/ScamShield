@@ -125,7 +125,7 @@ class LearnScreen extends StatelessWidget {
             style: TextStyle(color: Palette.dim, fontSize: 12)),
         const SizedBox(height: 12),
         GlassCard(
-          borderColor: Palette.cyan.withOpacity(0.5),
+          borderColor: Palette.cyan.withValues(alpha: 0.5),
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -171,7 +171,7 @@ class LearnScreen extends StatelessWidget {
                     height: 38,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Palette.violet.withOpacity(0.2),
+                      color: Palette.violet.withValues(alpha: 0.2),
                     ),
                     child: Icon(b.icon, color: Palette.violet, size: 20),
                   ),
