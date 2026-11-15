@@ -53,7 +53,7 @@ class _MediaInvestigatorScreenState
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       children: [
         GlassCard(
-          borderColor: Palette.violet.withOpacity(0.45),
+          borderColor: Palette.violet.withValues(alpha: 0.45),
           tint: const Color(0x127C5CFF),
           child: const Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,7 +134,7 @@ class _MediaInvestigatorScreenState
           if (state.media!.ocrNotice != null) ...[
             const SizedBox(height: 10),
             GlassCard(
-              borderColor: Palette.amber.withOpacity(0.45),
+              borderColor: Palette.amber.withValues(alpha: 0.45),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -256,7 +256,7 @@ class _QrDetectedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      borderColor: Palette.green.withOpacity(0.45),
+      borderColor: Palette.green.withValues(alpha: 0.45),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -324,8 +324,8 @@ class _MediaInvestigationResult extends StatelessWidget {
     final color = _color;
 
     return GlassCard(
-      borderColor: color.withOpacity(0.65),
-      tint: color.withOpacity(0.055),
+      borderColor: color.withValues(alpha: 0.65),
+      tint: color.withValues(alpha: 0.055),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -338,7 +338,7 @@ class _MediaInvestigationResult extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: color, width: 3),
-                  color: color.withOpacity(0.08),
+                  color: color.withValues(alpha: 0.08),
                 ),
                 child: Text(
                   '${result.riskScore}',
@@ -397,8 +397,8 @@ class _MediaInvestigationResult extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    color: Palette.cyan.withOpacity(0.05),
-                    border: Border.all(color: Palette.cyan.withOpacity(0.22)),
+                    color: Palette.cyan.withValues(alpha: 0.05),
+                    border: Border.all(color: Palette.cyan.withValues(alpha: 0.22)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
