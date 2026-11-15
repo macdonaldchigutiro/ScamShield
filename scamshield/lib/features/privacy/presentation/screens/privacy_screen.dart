@@ -72,7 +72,7 @@ class PrivacyScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 20),
                 GlassCard(
-                  borderColor: Palette.cyan.withOpacity(.35),
+                  borderColor: Palette.cyan.withValues(alpha: .35),
                   child: consent.isLoading
                       ? const Center(
                           child: Padding(
@@ -116,9 +116,9 @@ class PrivacyScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Palette.amber.withOpacity(.08),
+                    color: Palette.amber.withValues(alpha: .08),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Palette.amber.withOpacity(.35)),
+                    border: Border.all(color: Palette.amber.withValues(alpha: .35)),
                   ),
                   child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +168,7 @@ class _PrivacyPoint extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: Palette.cyan.withOpacity(.10),
+              color: Palette.cyan.withValues(alpha: .10),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: Palette.cyan),
