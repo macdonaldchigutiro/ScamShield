@@ -454,7 +454,7 @@ class _SosScreenState extends ConsumerState<SosScreen> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: Palette.red.withOpacity(.10),
+                          color: Palette.red.withValues(alpha: .10),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(choice.icon, color: Palette.red, size: 27),
@@ -579,9 +579,9 @@ class _SosScreenState extends ConsumerState<SosScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Palette.amber.withOpacity(.10),
+        color: Palette.amber.withValues(alpha: .10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Palette.amber.withOpacity(.55)),
+        border: Border.all(color: Palette.amber.withValues(alpha: .55)),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
