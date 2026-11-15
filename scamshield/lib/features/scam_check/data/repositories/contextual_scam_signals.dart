@@ -99,7 +99,7 @@ List<ContextualScamSignal> contextualScamSignals(String text) {
   // Ordinary requests between partners are not sufficient to label romance
   // fraud. Look for an online/remote relationship or secrecy/emergency pressure.
   final remoteOrPressure = _has(input,
-      r'\b(online|dating app|never met|long distance|overseas|abroad|don\'t tell|do not tell|keep (this|it) secret|urgent|emergency)\b');
+      r"\b(online|dating app|never met|long distance|overseas|abroad|don't tell|do not tell|keep (this|it) secret|urgent|emergency)\b");
   if (relationship && financialRequest && remoteOrPressure) {
     result.add(const ContextualScamSignal(
       category: 'Romance-related money request',
