@@ -237,7 +237,7 @@ class _FilterChip extends StatelessWidget {
         onSelected: (_) => onSelected(),
         label: Text(label),
         showCheckmark: selected,
-        selectedColor: Palette.cyan.withOpacity(.15),
+        selectedColor: Palette.cyan.withValues(alpha: .15),
         backgroundColor: Palette.surface,
         labelStyle: TextStyle(
           color: selected ? Palette.text : Palette.textSecondary,
@@ -270,7 +270,7 @@ class _LockerSummary extends StatelessWidget {
         .length;
 
     return GlassCard(
-      borderColor: Palette.cyan.withOpacity(0.38),
+      borderColor: Palette.cyan.withValues(alpha: 0.38),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -280,9 +280,9 @@ class _LockerSummary extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: Palette.cyan.withOpacity(.09),
+                  color: Palette.cyan.withValues(alpha: .09),
                   borderRadius: BorderRadius.circular(13),
-                  border: Border.all(color: Palette.cyan.withOpacity(.25)),
+                  border: Border.all(color: Palette.cyan.withValues(alpha: .25)),
                 ),
                 child: const Icon(Icons.inventory_2_outlined, color: Palette.cyan),
               ),
@@ -364,9 +364,9 @@ class _SummaryStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.22)),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Column(
         children: [
@@ -413,7 +413,7 @@ class _IncidentCard extends ConsumerWidget {
         onTap: () => _showIncidentSheet(context, ref, incident),
         child: GlassCard(
           padding: const EdgeInsets.all(15),
-          borderColor: color.withOpacity(0.3),
+          borderColor: color.withValues(alpha: 0.3),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -422,9 +422,9 @@ class _IncidentCard extends ConsumerWidget {
                 height: 58,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(17),
-                  border: Border.all(color: color.withOpacity(0.34)),
+                  border: Border.all(color: color.withValues(alpha: 0.34)),
                 ),
                 child: incident.riskScore == 0
                     ? const Text(
@@ -541,9 +541,9 @@ class _MiniPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(.08),
+        color: color.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: color.withOpacity(.25)),
+        border: Border.all(color: color.withValues(alpha: .25)),
       ),
       child: Text(
         label,
@@ -568,9 +568,9 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.11),
+        color: color.withValues(alpha: 0.11),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         label,
@@ -596,7 +596,7 @@ class _EmptyLocker extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: GlassCard(
-            borderColor: Palette.cyan.withOpacity(0.28),
+            borderColor: Palette.cyan.withValues(alpha: 0.28),
             child: const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -712,7 +712,7 @@ void _showIncidentSheet(
                     const SizedBox(height: 4),
                     GlassCard(
                       padding: const EdgeInsets.all(16),
-                      borderColor: verdictColor.withOpacity(.38),
+                      borderColor: verdictColor.withValues(alpha: .38),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -721,9 +721,9 @@ void _showIncidentSheet(
                             height: 72,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: verdictColor.withOpacity(.1),
+                              color: verdictColor.withValues(alpha: .1),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: verdictColor.withOpacity(.32)),
+                              border: Border.all(color: verdictColor.withValues(alpha: .32)),
                             ),
                             child: incident.riskScore == 0
                                 ? const Text(
@@ -1081,7 +1081,7 @@ class _StatusButton extends StatelessWidget {
             onPressed: onPressed,
             style: OutlinedButton.styleFrom(
               foregroundColor: color,
-              side: BorderSide(color: color.withOpacity(.55)),
+              side: BorderSide(color: color.withValues(alpha: .55)),
             ),
             child: Text(label),
           );
