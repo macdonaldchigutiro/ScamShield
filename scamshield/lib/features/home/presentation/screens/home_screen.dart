@@ -129,7 +129,7 @@ class _CheckCard extends StatelessWidget {
       children: [
         GlassCard(
           padding: const EdgeInsets.all(26),
-          borderColor: Palette.cyan.withOpacity(.5),
+          borderColor: Palette.cyan.withValues(alpha: .5),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -166,7 +166,7 @@ class _CheckCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Palette.cyan.withOpacity(.32)),
+                      border: Border.all(color: Palette.cyan.withValues(alpha: .32)),
                     ),
                     child: const Row(
                       children: [
@@ -377,9 +377,9 @@ class _ProtectionCard extends StatelessWidget {
                 icon: const Icon(Icons.verified_user_outlined),
                 label: const Text('Improve my protection'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Palette.cyan.withOpacity(.16),
+                  backgroundColor: Palette.cyan.withValues(alpha: .16),
                   foregroundColor: Palette.violet,
-                  side: BorderSide(color: Palette.cyan.withOpacity(.45)),
+                  side: BorderSide(color: Palette.cyan.withValues(alpha: .45)),
                   minimumSize: const Size(48, 50),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -401,9 +401,9 @@ class _PrivacyStrip extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: Palette.green.withOpacity(.045),
+        color: Palette.green.withValues(alpha: .045),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Palette.green.withOpacity(.24)),
+        border: Border.all(color: Palette.green.withValues(alpha: .24)),
       ),
       child: const Row(
         children: [
@@ -508,9 +508,9 @@ class _EmptyRecent extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: Palette.cyan.withOpacity(.08),
+              color: Palette.cyan.withValues(alpha: .08),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Palette.cyan.withOpacity(.22)),
+              border: Border.all(color: Palette.cyan.withValues(alpha: .22)),
             ),
             child: const Icon(Icons.history_rounded, color: Palette.cyan),
           ),
@@ -556,9 +556,9 @@ class _EmergencyCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Palette.red.withOpacity(.07),
+        color: Palette.red.withValues(alpha: .07),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Palette.red.withOpacity(.42)),
+        border: Border.all(color: Palette.red.withValues(alpha: .42)),
       ),
       child: Row(
         children: [
@@ -616,7 +616,7 @@ class _RecentInvestigationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: GlassCard(
           padding: const EdgeInsets.all(15),
-          borderColor: color.withOpacity(.28),
+          borderColor: color.withValues(alpha: .28),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -626,8 +626,8 @@ class _RecentInvestigationCard extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  color: color.withOpacity(.1),
-                  border: Border.all(color: color.withOpacity(.3)),
+                  color: color.withValues(alpha: .1),
+                  border: Border.all(color: color.withValues(alpha: .3)),
                 ),
                 child: incident.riskScore == 0
                     ? const Text(
@@ -723,9 +723,9 @@ class _MiniBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(.08),
+        color: color.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(.24)),
+        border: Border.all(color: color.withValues(alpha: .24)),
       ),
       child: Text(
         label,
