@@ -197,7 +197,7 @@ class _NavItem extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           height: 72,
           decoration: BoxDecoration(
-            color: selected ? Palette.cyan.withOpacity(.09) : Colors.transparent,
+            color: selected ? Palette.cyan.withValues(alpha: .09) : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border(
               left: BorderSide(
