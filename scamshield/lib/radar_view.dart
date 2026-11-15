@@ -51,7 +51,7 @@ class _RadarPainter extends CustomPainter {
 
     // Rings and cross hairs
     final ring = Paint()
-      ..color = Palette.cyan.withOpacity(0.16)
+      ..color = Palette.cyan.withValues(alpha: 0.16)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     for (int i = 1; i <= 4; i++) {
@@ -63,7 +63,7 @@ class _RadarPainter extends CustomPainter {
       c,
       r,
       Paint()
-        ..color = Palette.cyan.withOpacity(0.5)
+        ..color = Palette.cyan.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );
@@ -76,8 +76,8 @@ class _RadarPainter extends CustomPainter {
         ..shader = SweepGradient(
           colors: [
             Colors.transparent,
-            Palette.cyan.withOpacity(0),
-            Palette.cyan.withOpacity(0.3),
+            Palette.cyan.withValues(alpha: 0),
+            Palette.cyan.withValues(alpha: 0.3),
           ],
           stops: const [0.0, 0.7, 1.0],
           transform: GradientRotation(t * 2 * math.pi),
@@ -112,7 +112,7 @@ class _RadarPainter extends CustomPainter {
           p,
           6 + 18 * ph,
           Paint()
-            ..color = col.withOpacity((1 - ph) * fade)
+            ..color = col.withValues(alpha: (1 - ph) * fade)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1.5,
         );
@@ -121,10 +121,10 @@ class _RadarPainter extends CustomPainter {
         p,
         size0 + 4,
         Paint()
-          ..color = col.withOpacity(0.4 * fade)
+          ..color = col.withValues(alpha: 0.4 * fade)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
       );
-      canvas.drawCircle(p, size0, Paint()..color = col.withOpacity(fade));
+      canvas.drawCircle(p, size0, Paint()..color = col.withValues(alpha: fade));
     }
 
     // Shield in the centre
@@ -139,7 +139,7 @@ class _RadarPainter extends CustomPainter {
     canvas.drawPath(
       shield,
       Paint()
-        ..color = Palette.cyan.withOpacity(0.5)
+        ..color = Palette.cyan.withValues(alpha: 0.5)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
     );
     canvas.drawPath(shield, Paint()..color = const Color(0xFF07182E));
