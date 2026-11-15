@@ -21,7 +21,7 @@ void main() {
 
     test('suspicious money request never has a no-scams-found heading', () async {
       final result = await repository.investigate(
-        content: 'I am your mother and desperately need money. I am in hospital. Please transfer $30 000 into my account now',
+        content: 'I am your mother and desperately need money. I am in hospital. Please transfer \$30 000 into my account now',
         inputType: InvestigationInputType.message,
         channel: InvestigationChannel.whatsapp,
       );
