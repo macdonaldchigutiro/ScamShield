@@ -64,6 +64,30 @@ void main() {
       );
     });
 
+    test('phishing links keep an explanatory warning', () async {
+      final result = await repository.investigate(
+        content: 'Your account will be suspended. Verify at https://paypal-secure-login.example.com/verify',
+        inputType: InvestigationInputType.link,
+        channel: InvestigationChannel.email,
+      );
+      expect(result.verdict, isNot(InvestigationVerdict.lowRisk));
+      expect(result.links, isNotEmpty);
+      expect(result.reasons, isNotEmpty);
+    });
+
+    test('additional money-request score does not retain safe advice', () async {
+      final result = await repository.investigate(
+        content: 'Please transfer \$30 000 into my account now',
+        inputType: InvestigationInputType.message,
+        channel: InvestigationChannel.other,
+      );
+      if (result.verdict != InvestigationVerdict.lowRisk) {
+        expect(result.category.toLowerCase(), isNot(contains('no scam signs')));
+        expect(result.recommendedActions.join(' ').toLowerCase(),
+            isNot(contains('no common scam signs found')));
+      }
+    });
+
     test('phone-only checks do not use contextual message patterns', () async {
       final result = await repository.investigate(
         content: '+44 7700 900123',
