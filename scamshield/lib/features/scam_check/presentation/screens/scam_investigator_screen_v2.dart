@@ -145,7 +145,7 @@ class _InvestigatorHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      borderColor: Palette.cyan.withOpacity(0.35),
+      borderColor: Palette.cyan.withValues(alpha: 0.35),
       tint: const Color(0x1500E5FF),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,7 +158,7 @@ class _InvestigatorHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Palette.cyan.withOpacity(0.25),
+                  color: Palette.cyan.withValues(alpha: 0.25),
                   blurRadius: 20,
                 ),
               ],
@@ -371,7 +371,7 @@ class _InvestigationInput extends StatelessWidget {
                           horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: value == channel
-                            ? Palette.violet.withOpacity(0.5)
+                            ? Palette.violet.withValues(alpha: 0.5)
                             : Palette.glass,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
@@ -460,7 +460,7 @@ class _ScanningPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      borderColor: Palette.cyan.withOpacity(0.3),
+      borderColor: Palette.cyan.withValues(alpha: 0.3),
       child: const Column(
         children: [
           LinearProgressIndicator(
@@ -508,8 +508,8 @@ class _ResultView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GlassCard(
-          borderColor: color.withOpacity(0.65),
-          tint: color.withOpacity(0.05),
+          borderColor: color.withValues(alpha: 0.65),
+          tint: color.withValues(alpha: 0.05),
           child: Column(
             children: [
               Row(
@@ -604,9 +604,9 @@ class _ResultView extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.08),
+                    color: color.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: color.withOpacity(0.25)),
+                    border: Border.all(color: color.withValues(alpha: 0.25)),
                   ),
                   child: Text(
                     result.verdict == InvestigationVerdict.highRisk
@@ -684,8 +684,8 @@ class _ResultView extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: GlassCard(
                 borderColor: link.risk > 0
-                    ? Palette.red.withOpacity(0.4)
-                    : Palette.green.withOpacity(0.25),
+                    ? Palette.red.withValues(alpha: 0.4)
+                    : Palette.green.withValues(alpha: 0.25),
                 child: Row(
                   children: [
                     Icon(
@@ -857,7 +857,7 @@ class _HighlightedText extends StatelessWidget {
             : TextStyle(
                 color: warningColor,
                 fontWeight: FontWeight.w700,
-                backgroundColor: warningColor.withOpacity(0.13),
+                backgroundColor: warningColor.withValues(alpha: 0.13),
               ),
       ));
       start = end;
