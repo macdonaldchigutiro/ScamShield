@@ -76,7 +76,7 @@ class PartnerScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Palette.amber.withOpacity(0.15),
+                          color: Palette.amber.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: Palette.amber),
                         ),
@@ -239,7 +239,7 @@ class PartnerScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GlassCard(
-        borderColor: color.withOpacity(0.4),
+        borderColor: color.withValues(alpha: 0.4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
