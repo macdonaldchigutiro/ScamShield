@@ -63,8 +63,8 @@ class RadarScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: color.withOpacity(0.08),
-          border: Border.all(color: color.withOpacity(0.28)),
+          color: color.withValues(alpha: 0.08),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
         ),
         child: Row(
           children: [
@@ -73,7 +73,7 @@ class RadarScreen extends StatelessWidget {
               height: 46,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                color: color.withOpacity(0.14),
+                color: color.withValues(alpha: 0.14),
               ),
               child: Icon(icon, color: color),
             ),
@@ -95,7 +95,7 @@ class RadarScreen extends StatelessWidget {
               ),
             ),
             Icon(Icons.arrow_forward_rounded,
-                color: color.withOpacity(0.9), size: 18),
+                color: color.withValues(alpha: 0.9), size: 18),
           ],
         ),
       ),
@@ -108,7 +108,7 @@ class RadarScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: Colors.white.withOpacity(0.025),
+          color: Colors.white.withValues(alpha: 0.025),
           border: Border.all(color: Palette.glassBorder),
         ),
         child: Column(
@@ -139,7 +139,7 @@ class RadarScreen extends StatelessWidget {
       children: [
         GlassCard(
           padding: const EdgeInsets.all(20),
-          borderColor: Palette.cyan.withOpacity(0.26),
+          borderColor: Palette.cyan.withValues(alpha: 0.26),
           tint: const Color(0x1600E5FF),
           child: LayoutBuilder(
             builder: (context, box) {
@@ -150,9 +150,9 @@ class RadarScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Palette.green.withOpacity(0.10),
+                      color: Palette.green.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Palette.green.withOpacity(0.32)),
+                      border: Border.all(color: Palette.green.withValues(alpha: 0.32)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -214,11 +214,11 @@ class RadarScreen extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Palette.violet.withOpacity(0.16),
-                      Palette.cyan.withOpacity(0.05),
+                      Palette.violet.withValues(alpha: 0.16),
+                      Palette.cyan.withValues(alpha: 0.05),
                     ],
                   ),
-                  border: Border.all(color: Palette.violet.withOpacity(0.26)),
+                  border: Border.all(color: Palette.violet.withValues(alpha: 0.26)),
                 ),
                 child: Row(
                   children: [
@@ -389,9 +389,9 @@ class RadarScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: levelColor.withOpacity(0.12),
+                      color: levelColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: levelColor.withOpacity(0.7)),
+                      border: Border.all(color: levelColor.withValues(alpha: 0.7)),
                     ),
                     child: Text('THREAT $level',
                         style: TextStyle(
@@ -438,8 +438,8 @@ class RadarScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
-                          color: Palette.red.withOpacity(0.06),
-                          border: Border.all(color: Palette.red.withOpacity(0.22)),
+                          color: Palette.red.withValues(alpha: 0.06),
+                          border: Border.all(color: Palette.red.withValues(alpha: 0.22)),
                         ),
                         child: Row(
                           children: [
@@ -487,7 +487,7 @@ class RadarScreen extends StatelessWidget {
               onTap: () => showAnalysisSheet(context, m.text, m.a, sender: m.sender),
               child: GlassCard(
                 padding: const EdgeInsets.all(12),
-                borderColor: verdictColor(m.a.verdict).withOpacity(0.28),
+                borderColor: verdictColor(m.a.verdict).withValues(alpha: 0.28),
                 child: Row(
                   children: [
                     Container(
@@ -495,7 +495,7 @@ class RadarScreen extends StatelessWidget {
                       height: 42,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(13),
-                        color: verdictColor(m.a.verdict).withOpacity(0.12),
+                        color: verdictColor(m.a.verdict).withValues(alpha: 0.12),
                       ),
                       child: Icon(verdictIcon(m.a.verdict),
                           color: verdictColor(m.a.verdict), size: 21),
