@@ -58,7 +58,7 @@ class ProtectionScreen extends ConsumerWidget {
         const Text('This score comes only from the safety steps you confirm below. ScamShield does not guess settings it cannot verify.', style: TextStyle(color: Palette.dim, fontSize: 13, height: 1.45)),
         const SizedBox(height: 14),
         GlassCard(
-          borderColor: color.withOpacity(.45),
+          borderColor: color.withValues(alpha: .45),
           child: state.isLoading
               ? const Center(child: CircularProgressIndicator(color: Palette.cyan))
               : Row(
@@ -96,7 +96,7 @@ class ProtectionScreen extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: GlassCard(
                 padding: EdgeInsets.zero,
-                borderColor: completed.contains(step.id) ? Palette.green.withOpacity(.45) : null,
+                borderColor: completed.contains(step.id) ? Palette.green.withValues(alpha: .45) : null,
                 child: Theme(
                   data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
