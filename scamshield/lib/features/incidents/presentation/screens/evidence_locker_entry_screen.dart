@@ -52,7 +52,7 @@ class EvidenceLockerEntryScreen extends ConsumerWidget {
                 constraints: const BoxConstraints(maxWidth: 540),
                 child: GlassCard(
                   padding: const EdgeInsets.all(24),
-                  borderColor: Palette.cyan.withOpacity(.30),
+                  borderColor: Palette.cyan.withValues(alpha: .30),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -60,10 +60,10 @@ class EvidenceLockerEntryScreen extends ConsumerWidget {
                         width: 68,
                         height: 68,
                         decoration: BoxDecoration(
-                          color: Palette.cyan.withOpacity(.09),
+                          color: Palette.cyan.withValues(alpha: .09),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Palette.cyan.withOpacity(.24),
+                            color: Palette.cyan.withValues(alpha: .24),
                           ),
                         ),
                         child: const Icon(
